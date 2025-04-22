@@ -1,15 +1,17 @@
 .env
-.env/
 
-.venv
 .venv/
 
-__pycache__
 __pycache__/
 
-threads
+# Ignore threads directory
 threads/
-*.json[cod]
 
-config
+# Ignore config directory
 config/
+
+credentials/
+
+token.json
+
+dev/
