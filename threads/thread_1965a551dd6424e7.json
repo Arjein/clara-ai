@@ -1,0 +1,41 @@
+{
+    "id": "1965a551dd6424e7",
+    "history_id": "1788303",
+    "subject": "qewqwe",
+    "messages": [
+        {
+            "id": "1965a551dd6424e7",
+            "message_id": "<CAJ2=yq9NAYSrwvAoqtjP34pSwUg9xN-3wmpSyrXVwdkxUytbWg@mail.gmail.com>",
+            "thread_id": "1965a551dd6424e7",
+            "subject": "qewqwe",
+            "label_ids": [
+                "Label_40",
+                "IMPORTANT",
+                "CATEGORY_PERSONAL",
+                "INBOX"
+            ],
+            "snippet": "qewqwewqeeeqweqwweqwqqewqewweqwweqe",
+            "sender_name": "E-agent",
+            "sender_email": "e.agent.test0@gmail.com",
+            "recipient_name": "Mert Arcan",
+            "recipient_email": "mertarcan8@gmail.com",
+            "cc": null,
+            "date": "Tue, 22 Apr 2025 00:50:37 +0300",
+            "reply_to": null,
+            "references": null,
+            "body_encrypted": "cWV3cXdld3FlZWVxd2Vxd3dlcXdxcWV3cWV3d2Vxd3dlcWUNCg==",
+            "body": "qewqwewqeeeqweqwweqwqqewqewweqwweqe\r\n",
+            "clean_body": "qewqwewqeeeqweqwweqwqqewqewweqwweqe"
+        }
+    ],
+    "label_ids": [
+        "Label_40",
+        "IMPORTANT",
+        "CATEGORY_PERSONAL",
+        "INBOX"
+    ],
+    "last_updated": "2025-04-22T00:50:37+03:00",
+    "reply_class": "ignore",
+    "replied": false,
+    "pre_reply_class": true
+}

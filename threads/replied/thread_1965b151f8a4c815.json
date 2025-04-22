@@ -1,0 +1,69 @@
+{
+    "id": "1965b151f8a4c815",
+    "history_id": "1789440",
+    "subject": "Can You Join the Client Call Tomorrow?",
+    "messages": [
+        {
+            "id": "1965b151f8a4c815",
+            "message_id": "<CAJ2=yq9kU1JmCQiQ__ekgG-KPNLZ1ghsGj3jjk7gGcPTiT64Mg@mail.gmail.com>",
+            "thread_id": "1965b151f8a4c815",
+            "subject": "Can You Join the Client Call Tomorrow?",
+            "label_ids": [
+                "UNREAD",
+                "Label_38",
+                "IMPORTANT",
+                "CATEGORY_PERSONAL",
+                "INBOX"
+            ],
+            "snippet": "Hi Mert, We&#39;re having a follow-up call with the Bionex team tomorrow at 3 PM. Can you join to go over the technical scope? Let me know, Onur Aksoy",
+            "sender_name": "E-agent",
+            "sender_email": "e.agent.test0@gmail.com",
+            "recipient_name": "Mert Arcan",
+            "recipient_email": "mertarcan8@gmail.com",
+            "cc": null,
+            "date": "Tue, 22 Apr 2025 04:20:20 +0300",
+            "reply_to": null,
+            "references": null,
+            "body_encrypted": "SGkgTWVydCwNCg0KV2XigJlyZSBoYXZpbmcgYSBmb2xsb3ctdXAgY2FsbCB3aXRoIHRoZSBCaW9uZXggdGVhbSB0b21vcnJvdyBhdCAzIFBNLiBDYW4NCnlvdSBqb2luIHRvIGdvIG92ZXIgdGhlIHRlY2huaWNhbCBzY29wZT8NCg0KTGV0IG1lIGtub3csDQoNCipPbnVyIEFrc295Kg0K",
+            "body": "Hi Mert,\r\n\r\nWe\u2019re having a follow-up call with the Bionex team tomorrow at 3 PM. Can\r\nyou join to go over the technical scope?\r\n\r\nLet me know,\r\n\r\n*Onur Aksoy*\r\n",
+            "clean_body": "Hi Mert,\r\n\r\nWe\u2019re having a follow-up call with the Bionex team tomorrow at 3 PM. Can\r\nyou join to go over the technical scope?\r\n\r\nLet me know,\r\n\r\n*Onur Aksoy*"
+        },
+        {
+            "id": "1965b1594c16c6e1",
+            "message_id": null,
+            "thread_id": "1965b151f8a4c815",
+            "subject": "Can You Join the Client Call Tomorrow?",
+            "label_ids": [
+                "UNREAD",
+                "Label_38",
+                "DRAFT",
+                "IMPORTANT",
+                "CATEGORY_PERSONAL",
+                "INBOX"
+            ],
+            "snippet": "Hi Onur, Thank you for scheduling the follow-up call with the Bionex team. I can join the call tomorrow at 3 PM to go over the technical scope. [Please confirm if there are any additional details such",
+            "sender_name": null,
+            "sender_email": "mertarcan8@gmail.com",
+            "recipient_name": null,
+            "recipient_email": "e.agent.test0@gmail.com",
+            "cc": null,
+            "date": "Mon, 21 Apr 2025 21:21:03 -0400",
+            "reply_to": "",
+            "references": "<CAJ2=yq9kU1JmCQiQ__ekgG-KPNLZ1ghsGj3jjk7gGcPTiT64Mg@mail.gmail.com>",
+            "body_encrypted": "SGkgT251ciwKClRoYW5rIHlvdSBmb3Igc2NoZWR1bGluZyB0aGUgZm9sbG93LXVwIGNhbGwgd2l0aCB0aGUgQmlvbmV4IHRlYW0uIEkgY2FuIGpvaW4gdGhlIGNhbGwgdG9tb3Jyb3cgYXQgMyBQTSB0byBnbyBvdmVyIHRoZSB0ZWNobmljYWwgc2NvcGUuCgpbUGxlYXNlIGNvbmZpcm0gaWYgdGhlcmUgYXJlIGFueSBhZGRpdGlvbmFsIGRldGFpbHMgc3VjaCBhcyB0aGUgbWVldGluZyBsaW5rIG9yIGFueSBjaGFuZ2VzIHRvIHRoZSBjYWxsIGFnZW5kYS5dCgpCZXN0IHJlZ2FyZHMsCk1lcnQK",
+            "body": "Hi Onur,\n\nThank you for scheduling the follow-up call with the Bionex team. I can join the call tomorrow at 3 PM to go over the technical scope.\n\n[Please confirm if there are any additional details such as the meeting link or any changes to the call agenda.]\n\nBest regards,\nMert\n",
+            "clean_body": "Hi Onur,\n\nThank you for scheduling the follow-up call with the Bionex team. I can join the call tomorrow at 3 PM to go over the technical scope.\n\n[Please confirm if there are any additional details such as the meeting link or any changes to the call agenda.]\n\nBest regards,\nMert"
+        }
+    ],
+    "label_ids": [
+        "UNREAD",
+        "Label_38",
+        "IMPORTANT",
+        "CATEGORY_PERSONAL",
+        "INBOX"
+    ],
+    "last_updated": "2025-04-21T21:21:03-04:00",
+    "reply_class": "info_required",
+    "replied": true,
+    "pre_reply_class": true
+}

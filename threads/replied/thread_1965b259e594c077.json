@@ -1,0 +1,66 @@
+{
+    "id": "1965b259e594c077",
+    "history_id": "1789912",
+    "subject": "Long time no see",
+    "messages": [
+        {
+            "id": "1965b259e594c077",
+            "message_id": "<CAJ2=yq8XfL51HkK=WSNpyeC7H-U+qLFnA8BCX77NxSRhwMsxRA@mail.gmail.com>",
+            "thread_id": "1965b259e594c077",
+            "subject": "Long time no see",
+            "label_ids": [
+                "Label_38",
+                "IMPORTANT",
+                "CATEGORY_PERSONAL",
+                "INBOX"
+            ],
+            "snippet": "Hi Mert, I really missed you as we have not seen each other for a long time. Can you please give me a call whenever you are available. I will be waiting for your call. - Eric Williams",
+            "sender_name": "E-agent",
+            "sender_email": "e.agent.test0@gmail.com",
+            "recipient_name": "Mert Arcan",
+            "recipient_email": "mertarcan8@gmail.com",
+            "cc": null,
+            "date": "Tue, 22 Apr 2025 04:38:22 +0300",
+            "reply_to": null,
+            "references": null,
+            "body_encrypted": "SGkgTWVydCwNCg0KSSByZWFsbHkgbWlzc2VkIHlvdSBhcyB3ZSBoYXZlIG5vdCBzZWVuIGVhY2ggb3RoZXIgZm9yIGEgbG9uZyB0aW1lLiBDYW4geW91DQpwbGVhc2UgZ2l2ZSBtZSBhIGNhbGwgd2hlbmV2ZXIgeW91IGFyZSBhdmFpbGFibGUuIEkgd2lsbCBiZSB3YWl0aW5nIGZvcg0KeW91ciBjYWxsLg0KDQotIEVyaWMgV2lsbGlhbXMNCg==",
+            "body": "Hi Mert,\r\n\r\nI really missed you as we have not seen each other for a long time. Can you\r\nplease give me a call whenever you are available. I will be waiting for\r\nyour call.\r\n\r\n- Eric Williams\r\n",
+            "clean_body": "Hi Mert,\r\n\r\nI really missed you as we have not seen each other for a long time. Can you\r\nplease give me a call whenever you are available. I will be waiting for\r\nyour call.\r\n\r\n- Eric Williams"
+        },
+        {
+            "id": "1965b266d8899029",
+            "message_id": null,
+            "thread_id": "1965b259e594c077",
+            "subject": "Long time no see",
+            "label_ids": [
+                "Label_38",
+                "DRAFT",
+                "IMPORTANT",
+                "CATEGORY_PERSONAL",
+                "INBOX"
+            ],
+            "snippet": "Hi Eric, Great to hear from you\u2014it really has been too long! I&#39;ve been caught up with work lately and haven&#39;t had much time to catch up. I appreciate you reaching out. I&#39;d be happy to give",
+            "sender_name": null,
+            "sender_email": "mertarcan8@gmail.com",
+            "recipient_name": null,
+            "recipient_email": "e.agent.test0@gmail.com",
+            "cc": null,
+            "date": "Mon, 21 Apr 2025 18:39:27 -0700",
+            "reply_to": "",
+            "references": "<CAJ2=yq8XfL51HkK=WSNpyeC7H-U+qLFnA8BCX77NxSRhwMsxRA@mail.gmail.com>",
+            "body_encrypted": "SGkgRXJpYywKCkdyZWF0IHRvIGhlYXIgZnJvbSB5b3XigJRpdCByZWFsbHkgaGFzIGJlZW4gdG9vIGxvbmchIEkndmUgYmVlbiBjYXVnaHQgdXAgd2l0aCB3b3JrIGxhdGVseSBhbmQgaGF2ZW4ndCBoYWQgbXVjaCB0aW1lIHRvIGNhdGNoIHVwLiBJIGFwcHJlY2lhdGUgeW91IHJlYWNoaW5nIG91dC4gSSdkIGJlIGhhcHB5IHRvIGdpdmUgeW91IGEgY2FsbC4gQ291bGQgeW91IHBsZWFzZSBsZXQgbWUga25vdyBhIGNvbnZlbmllbnQgdGltZSBmb3IgeW91LCBvciBzaG91bGQgSSBzdWdnZXN0IGEgZmV3IG9wdGlvbnM_IFtQbGVhc2UgY29uZmlybSBhIHN1aXRhYmxlIHRpbWUgZm9yIHRoZSBjYWxsIG9yIGFkZCBhbnkgYWRkaXRpb25hbCBkZXRhaWxzIHlvdSB0aGluayBtaWdodCBoZWxwIHNjaGVkdWxlIG91ciBjb252ZXJzYXRpb25dLiBMb29raW5nIGZvcndhcmQgdG8gcmVjb25uZWN0aW5nIGFuZCBjYXRjaGluZyB1cCBvbiBvbGQgdGltZXMuCgpCZXN0IHJlZ2FyZHMsCk1lcnQK",
+            "body": "Hi Eric,\n\nGreat to hear from you\u2014it really has been too long! I've been caught up with work lately and haven't had much time to catch up. I appreciate you reaching out. I'd be happy to give you a call. Could you please let me know a convenient time for you, or should I suggest a few options? [Please confirm a suitable time for the call or add any additional details you think might help schedule our conversation]. Looking forward to reconnecting and catching up on old times.\n\nBest regards,\nMert\n",
+            "clean_body": "Hi Eric,\n\nGreat to hear from you\u2014it really has been too long! I've been caught up with work lately and haven't had much time to catch up. I appreciate you reaching out. I'd be happy to give you a call. Could you please let me know a convenient time for you, or should I suggest a few options? [Please confirm a suitable time for the call or add any additional details you think might help schedule our conversation]. Looking forward to reconnecting and catching up on old times.\n\nBest regards,\nMert"
+        }
+    ],
+    "label_ids": [
+        "Label_38",
+        "IMPORTANT",
+        "CATEGORY_PERSONAL",
+        "INBOX"
+    ],
+    "last_updated": "2025-04-21T18:39:27-07:00",
+    "reply_class": "info_required",
+    "replied": true,
+    "pre_reply_class": true
+}

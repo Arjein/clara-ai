@@ -1,0 +1,224 @@
+import json
+import logging
+import argparse
+import pickle
+import signal
+import sys
+import time
+import traceback
+import os
+from rich.console import Console
+from rich.logging import RichHandler
+from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeElapsedColumn, TimeRemainingColumn
+from rich.table import Table
+from rich import print as rprint
+from tqdm import tqdm
+from agents.secretary_agent import SecretaryAgent
+from objects.gmail_handler import GmailHandler
+from transformers import pipeline
+from user import AppUser
+from datetime import datetime, timedelta
+from agents.email_response import EmailResponse
+from helpers import get_threads_require_process, load_saved_threads, process_thread
+
+# Create console instance for rich output
+console = Console()
+
+def setup_logging(debug=False, log_file="clara_secretary.log"):
+    """Set up logging with optional rich formatting for console output"""
+    level = logging.DEBUG if debug else logging.INFO
+    
+    # Configure basic file logging
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+    
+    # Configure rich console logging
+    rich_handler = RichHandler(rich_tracebacks=True, console=console)
+    
+    # Set up the logger
+    logger = logging.getLogger("ClaraSecretary")
+    logger.setLevel(level)
+    logger.handlers = [file_handler, rich_handler]  # Replace any existing handlers
+    
+    return logger
+
+def parse_arguments():
+    """Parse command line arguments with enhanced options"""
+    parser = argparse.ArgumentParser(
+        description='Clara Secretary - An AI Email Assistant',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    
+    # Core settings
+    parser.add_argument('--interval', type=int, default=300,
+                        help='Check interval in seconds')
+    parser.add_argument('--limit', type=int, default=10,
+                        help='Maximum number of emails to fetch')
+    
+    # Logging and display options
+    parser.add_argument('--debug', action='store_true',
+                        help='Enable debug logging')
+    parser.add_argument('--log-file', type=str, default="clara_secretary.log",
+                        help='Path to log file')
+    parser.add_argument('--quiet', action='store_true',
+                        help='Minimal console output')
+    
+    return parser.parse_args()
+
+def display_banner():
+    """Display a welcome banner with app information"""
+    banner_text = """
+    [bold blue]Clara Secretary[/bold blue] - [italic]Your AI Email Assistant[/italic]
+    
+    Helping you manage your inbox smartly and efficiently
+    """
+    console.print(Panel(banner_text, expand=False, border_style="blue"))
+
+def display_status(all_threads, last_update, user_email):
+    """Display the current status of the application"""
+    table = Table(title="Clara Secretary Status")
+    
+    table.add_column("Setting", style="cyan")
+    table.add_column("Value", style="green")
+    
+    table.add_row("User Email", user_email)
+    table.add_row("Thread Count", str(len(all_threads)))
+    table.add_row("Last Update", str(last_update) if last_update else "Not Initialized")
+    
+    console.print(table)
+
+def handle_exit(signum, frame):
+    """Handle exit signals gracefully"""
+    console.print("\n[yellow]Received exit signal. Shutting down Clara Secretary...[/yellow]")
+    sys.exit(0)
+
+def main():
+    # Set up signal handlers for graceful exit
+    signal.signal(signal.SIGINT, handle_exit)
+    signal.signal(signal.SIGTERM, handle_exit)
+    
+    # Parse arguments
+    args = parse_arguments()
+    
+    # Display welcome banner
+    display_banner()
+    
+    # Set up logging
+    logger = setup_logging(args.debug, args.log_file)
+    
+    # Authenticate with Gmail 
+    with console.status("[bold green]Authenticating with Gmail...", spinner="dots"):
+        user_login_method = 'gmail'
+        gmail_handler = GmailHandler()
+    
+    # Make sure we have a valid user email
+    if not AppUser.email:
+        console.print("[bold red]Error: Could not determine user email from Gmail authentication[/bold red]")
+        exit(1)
+    
+    logger.info(f"Using authenticated user: {AppUser.email}")
+    
+    # Initialize the SecretaryAgent
+    with console.status("[bold green]Initializing Secretary Agent...", spinner="dots"):
+        secretary_agent = SecretaryAgent()
+    
+    # Load saved threads
+    with console.status("[bold green]Loading saved email threads...", spinner="dots"):
+        all_threads, last_update = load_saved_threads()
+    
+    if last_update:
+        logger.info(f"Local Last Update: {last_update} | {last_update.timestamp()}")
+    else:
+        logger.info(f"Local Last Update: Not Initialized")
+    
+    # Display initial status
+    display_status(all_threads, last_update, AppUser.email)
+    
+    try:
+        while True:    
+            try:
+                # Fetch threads with integrated analysis
+                if user_login_method == 'gmail':
+                    query = 'category:primary'
+                    if last_update:
+                        query += f" after:{int((last_update.timestamp()) + 15)}" # Adding 15 seconds buffer
+                    
+                    logger.info(f"Query: {query}")
+                    
+                    with console.status(f"[bold green]Fetching emails with query: {query}...", spinner="dots"):
+                        fetched_threads = gmail_handler.fetch_threads( 
+                            user_id='me', 
+                            query=query, 
+                            limit=args.limit,
+                        )
+                    
+                    # Display fetched threads
+                    if fetched_threads:
+                        console.print(f"\n[bold green]Found {len(fetched_threads)} new emails:[/bold green]")
+                        for t in fetched_threads:
+                            console.print(f"  • [cyan]{t.subject}[/cyan]")
+                            if t not in all_threads:
+                                all_threads.append(t)
+                    else:
+                        console.print("[yellow]No new emails found[/yellow]")
+                    
+                    # Process threads that need attention
+                    threads_require_process = get_threads_require_process(all_threads)
+                    
+                    if threads_require_process:
+                        console.print(f"\n[bold green]Processing {len(threads_require_process)} emails that require attention...[/bold green]")
+                        
+                        with Progress(
+                            SpinnerColumn(),
+                            TextColumn("[bold blue]{task.description}"),
+                            BarColumn(),
+                            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+                            TimeElapsedColumn(),
+                            console=console
+                        ) as progress:
+                            process_task = progress.add_task("Processing emails", total=len(threads_require_process))
+                            
+                            for thread in threads_require_process:
+                                progress.update(process_task, advance=1, description=f"Processing: {thread.subject[:40]}...")
+                                process_thread(thread, gmail_handler, secretary_agent, logger)
+                    
+                    # Update timestamp only if we have threads
+                    if all_threads:
+                        newest_thread = max(all_threads, key=lambda t: t.last_updated if t.last_updated else datetime.min)
+                        last_update = newest_thread.last_updated
+                        logger.info(f"Updated last_update time to {last_update} | {last_update.timestamp()}")
+                
+                next_check_time = datetime.now() + timedelta(seconds=args.interval)
+                logger.info(f"Waiting until next check ({next_check_time.strftime('%H:%M:%S')})")
+                
+                # Countdown timer for next check
+                with Progress(
+                    SpinnerColumn(),
+                    TextColumn("[bold green]Next check in:[/bold green]"),
+                    BarColumn(),
+                    TimeRemainingColumn(),
+                    console=console
+                ) as progress:
+                    wait_task = progress.add_task("Waiting", total=args.interval)
+                    remaining_time = args.interval
+                    
+                    while remaining_time > 0:
+                        time.sleep(1)
+                        remaining_time -= 1
+                        progress.update(wait_task, completed=args.interval - remaining_time)
+                
+            except Exception as e:
+                logger.error(f"Error in main processing loop: {e}")
+                logger.debug(traceback.format_exc())
+                console.print(f"[bold red]Error encountered: {e}[/bold red]")
+                console.print("[yellow]Retrying in 60 seconds...[/yellow]")
+                time.sleep(60)  
+
+    except KeyboardInterrupt:
+        console.print("\n[bold yellow]Shutting down Clara Secretary...[/bold yellow]")
+        console.print("[green]Thank you for using Clara Secretary![/green]")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,41 @@
+{
+    "id": "1965afe38870b271",
+    "history_id": "1788770",
+    "subject": "asddsasdasdda",
+    "messages": [
+        {
+            "id": "1965afe38870b271",
+            "message_id": "<CAJ2=yq8Y99vMFMODpMX1RKAbiJQoKOkguuLTKFM_tjUzeodnBA@mail.gmail.com>",
+            "thread_id": "1965afe38870b271",
+            "subject": "asddsasdasdda",
+            "label_ids": [
+                "Label_40",
+                "IMPORTANT",
+                "CATEGORY_PERSONAL",
+                "INBOX"
+            ],
+            "snippet": "sdasdsadsaasddasasda",
+            "sender_name": "E-agent",
+            "sender_email": "e.agent.test0@gmail.com",
+            "recipient_name": "Mert Arcan",
+            "recipient_email": "mertarcan8@gmail.com",
+            "cc": null,
+            "date": "Tue, 22 Apr 2025 03:55:19 +0300",
+            "reply_to": null,
+            "references": null,
+            "body_encrypted": "c2Rhc2RzYWRzYWFzZGRhc2FzZGENCg==",
+            "body": "sdasdsadsaasddasasda\r\n",
+            "clean_body": "sdasdsadsaasddasasda"
+        }
+    ],
+    "label_ids": [
+        "Label_40",
+        "IMPORTANT",
+        "CATEGORY_PERSONAL",
+        "INBOX"
+    ],
+    "last_updated": "2025-04-22T03:55:19+03:00",
+    "reply_class": "ignore",
+    "replied": false,
+    "pre_reply_class": true
+}

@@ -1,0 +1,34 @@
+{
+    "id": "19653f9033c943be",
+    "history_id": "1777505",
+    "subject": "Your GitHub Copilot trial ends in 7 days",
+    "messages": [
+        {
+            "id": "19653f9033c943be",
+            "message_id": "<scheduled_payment_reminder/62708030_6693a9cee6151bd1259dba45123f8daa@github.com>",
+            "thread_id": "19653f9033c943be",
+            "subject": "Your GitHub Copilot trial ends in 7 days",
+            "label_ids": [
+                "UNREAD",
+                "CATEGORY_UPDATES",
+                "INBOX"
+            ],
+            "snippet": "Your GitHub Copilot trial ends in 7 days Dear Arjein, Your trial is ending soon. At the end of the trial, your GitHub Copilot subscription will continue at $10/month billed to your credit card. You can",
+            "sender_name": "GitHub",
+            "sender_email": "noreply@github.com",
+            "recipient_name": "Mert Arcan",
+            "recipient_email": "mertarcan8@gmail.com",
+            "cc": null,
+            "date": "Sun, 20 Apr 2025 09:12:30 -0700",
+            "reply_to": null,
+            "references": null,
+            "body_encrypted": "RGVhciBBcmplaW4sDQoNCllvdXIgdHJpYWwgaXMgZW5kaW5nIHNvb24uIEF0IHRoZSBlbmQgb2YgdGhlIHRyaWFsLCB5b3VyIEdpdEh1YiBDb3BpbG90IHN1YnNjcmlwdGlvbiB3aWxsIGNvbnRpbnVlIGF0ICQxMC9tb250aCBiaWxsZWQgdG8geW91ciBjcmVkaXQgY2FyZC4NCg0KWW91IGNhbiBjYW5jZWwgeW91ciBDb3BpbG90IFBybyBzdWJzY3JpcHRpb24gdHJpYWwgYXQgYW55IHRpbWUgYmVmb3JlIEFwcmlsIDI3IGFuZCB5b3Ugd29uJ3QgYmUgY2hhcmdlZC4NCg0KSWYgeW91IGRvIG5vdCBjYW5jZWwgdGhlIHRyaWFsIGJlZm9yZSB0aGUgZW5kLCB0aGUgdHJpYWwgd2lsbCBhdXRvbWF0aWNhbGx5IGNvbnZlcnQgdG8gYSBwYWlkIHN1YnNjcmlwdGlvbiBzdGFydGluZyBmcm9tIEFwcmlsIDI3Lg0KDQpSZWFkIHRoZSBiaWxsaW5nIGRvY3VtZW50YXRpb24gZm9yIG1vcmUgZGV0YWlscy4NCg0KTWFuYWdlIHN1YnNjcmlwdGlvbjogaHR0cHM6Ly9naXRodWIuY29tL3NldHRpbmdzL2JpbGxpbmcvc3VtbWFyeQ0KDQpZb3UgY2FuIG1hbmFnZSB5b3VyIGJpbGxpbmcgcHJlZmVyZW5jZXMgb3IgeW91IGNhbiBjYW5jZWwgeW91ciBDb3BpbG90IFBybyBzdWJzY3JpcHRpb24gYXQgYW55IHRpbWU6IGh0dHBzOi8vZG9jcy5naXRodWIuY29tL2JpbGxpbmcvbWFuYWdpbmctYmlsbGluZy1mb3ItZ2l0aHViLWNvcGlsb3QvbWFuYWdpbmcteW91ci1naXRodWItY29waWxvdC1zdWJzY3JpcHRpb24tZm9yLXlvdXItcGVyc29uYWwtYWNjb3VudA0KUmVhZCBiaWxsaW5nIGRvY3VtZW50YXRpb24gZm9yIG1vcmUgZGV0YWlscy4gaHR0cHM6Ly9kb2NzLmdpdGh1Yi5jb20vYmlsbGluZy9tYW5hZ2luZy1iaWxsaW5nLWZvci1naXRodWItY29waWxvdC9hYm91dC1iaWxsaW5nLWZvci1naXRodWItY29waWxvdA0KDQpIYXZpbmcgdHJvdWJsZSBnZXR0aW5nIHN0YXJ0ZWQgd2l0aCBHaXRIdWIgQ29waWxvdD8gVmlzaXQgb3VyIEdldHRpbmcgU3RhcnRlZCBQYWdlOiBodHRwczovL2dpdGh1Yi5jb20vZmVhdHVyZXMvY29waWxvdC90dXRvcmlhbHMNCg==",
+            "body": "Dear Arjein,\r\n\r\nYour trial is ending soon. At the end of the trial, your GitHub Copilot subscription will continue at $10/month billed to your credit card.\r\n\r\nYou can cancel your Copilot Pro subscription trial at any time before April 27 and you won't be charged.\r\n\r\nIf you do not cancel the trial before the end, the trial will automatically convert to a paid subscription starting from April 27.\r\n\r\nRead the billing documentation for more details.\r\n\r\nManage subscription: https://github.com/settings/billing/summary\r\n\r\nYou can manage your billing preferences or you can cancel your Copilot Pro subscription at any time: https://docs.github.com/billing/managing-billing-for-github-copilot/managing-your-github-copilot-subscription-for-your-personal-account\r\nRead billing documentation for more details. https://docs.github.com/billing/managing-billing-for-github-copilot/about-billing-for-github-copilot\r\n\r\nHaving trouble getting started with GitHub Copilot? Visit our Getting Started Page: https://github.com/features/copilot/tutorials\r\n",
+            "clean_body": "Dear Arjein,\r\n\r\nYour trial is ending soon. At the end of the trial, your GitHub Copilot subscription will continue at $10/month billed to your credit card.\r\n\r\nYou can cancel your Copilot Pro subscription trial at any time before April 27 and you won't be charged.\r\n\r\nIf you do not cancel the trial before the end, the trial will automatically convert to a paid subscription starting from April 27.\r\n\r\nRead the billing documentation for more details.\r\n\r\nManage subscription: https://github.com/settings/billing/summary\r\n\r\nYou can manage your billing preferences or you can cancel your Copilot Pro subscription at any time: https://docs.github.com/billing/managing-billing-for-github-copilot/managing-your-github-copilot-subscription-for-your-personal-account\r\nRead billing documentation for more details. https://docs.github.com/billing/managing-billing-for-github-copilot/about-billing-for-github-copilot\r\n\r\nHaving trouble getting started with GitHub Copilot? Visit our Getting Started Page: https://github.com/features/copilot/tutorials"
+        }
+    ],
+    "last_updated": "Sun, 20 Apr 2025 09:12:30 -0700",
+    "reply_class": null,
+    "replied": false,
+    "pre_reply_class": false
+}
