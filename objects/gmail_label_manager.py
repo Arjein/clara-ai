@@ -12,6 +12,8 @@ by providing a centralized way to interact with Gmail's labeling system.
 import logging
 from labels import clara_labels
 from user import AppUser
+from objects.retry_utils import exponential_backoff_retry
+from googleapiclient.errors import HttpError
 
 class GmailLabelManager:
     """
@@ -33,7 +35,68 @@ class GmailLabelManager:
         self.logger = logging.getLogger("ClaraSecretary")
         self.service = service
         self.labels_dict = {}
+    
+    @exponential_backoff_retry(
+        max_retries=3,
+        base_delay=1.5,
+        retryable_exceptions=(HttpError, ConnectionError, TimeoutError)
+    )
+    def _list_labels(self, user_id='me'):
+        """
+        List all labels from the Gmail API with retry logic.
         
+        Args:
+            user_id (str): User ID to list labels for
+            
+        Returns:
+            dict: API response containing labels
+        """
+        return self.service.users().labels().list(userId=user_id).execute()
+    
+    @exponential_backoff_retry(
+        max_retries=3,
+        base_delay=1.5,
+        retryable_exceptions=(HttpError, ConnectionError, TimeoutError)
+    )
+    def _create_label(self, label_data, user_id='me'):
+        """
+        Create a new label in Gmail with retry logic.
+        
+        Args:
+            label_data (dict): Label data to create
+            user_id (str): User ID to create label for
+            
+        Returns:
+            dict: API response containing created label
+        """
+        return self.service.users().labels().create(
+            userId=user_id,
+            body=label_data
+        ).execute()
+    
+    @exponential_backoff_retry(
+        max_retries=3,
+        base_delay=1.5,
+        retryable_exceptions=(HttpError, ConnectionError, TimeoutError)
+    )
+    def _modify_thread_labels(self, thread_id, label_modifications, user_id='me'):
+        """
+        Modify labels on a thread with retry logic.
+        
+        Args:
+            thread_id (str): ID of thread to modify
+            label_modifications (dict): Label modifications to apply
+            user_id (str): User ID to modify thread for
+            
+        Returns:
+            dict: API response
+        """
+        return self.service.users().threads().modify(
+            id=thread_id, 
+            userId=user_id, 
+            body=label_modifications
+        ).execute()
+    
     def initialize_labels(self):
         """
         Initialize labels for the user and return a name-to-id mapping.
@@ -48,7 +111,7 @@ class GmailLabelManager:
             dict: A mapping of label names to their IDs
         """
         # Get existing labels first - avoid duplicate API calls
-        label_api_response = self.service.users().labels().list(userId='me').execute()
+        label_api_response = self._list_labels()
         
         # Create a name-to-id mapping
         existing_labels = {}
@@ -72,10 +135,7 @@ class GmailLabelManager:
                     }
                     
                     # Create the label and get its ID
-                    result = self.service.users().labels().create(
-                        userId='me',
-                        body=label_to_create
-                    ).execute()
+                    result = self._create_label(label_to_create)
                     
                     # Add to our tracked labels
                     existing_labels[label_name] = result['id']
@@ -86,7 +146,7 @@ class GmailLabelManager:
         # If labels were created, refresh our label list to ensure we have the most current IDs
         if created_labels:
             self.logger.info(f"Created {len(created_labels)} new labels")
-            label_api_response = self.service.users().labels().list(userId='me').execute()
+            label_api_response = self._list_labels()
             # Update our mapping with fresh data
             for label in label_api_response.get('labels', []):
                 existing_labels[label['name']] = label['id']
@@ -126,10 +186,9 @@ class GmailLabelManager:
             'removeLabelIds': remove_labels
         }
         
-        response = self.service.users().threads().modify(
-            id=thread_id, 
-            userId='me', 
-            body=label_modifications
-        ).execute()
+        response = self._modify_thread_labels(
+            thread_id=thread_id, 
+            label_modifications=label_modifications
+        )
         
         return response

@@ -13,6 +13,8 @@ while maintaining proper Gmail threading and conversation structure.
 import base64
 import logging
 from email.message import EmailMessage
+from objects.retry_utils import exponential_backoff_retry
+from googleapiclient.errors import HttpError
 
 class GmailMessageComposer:
     """
@@ -34,6 +36,48 @@ class GmailMessageComposer:
         self.logger = logging.getLogger("ClaraSecretary")
         self.service = service
         
+    @exponential_backoff_retry(
+        max_retries=4,
+        base_delay=2.0,
+        retryable_exceptions=(HttpError, ConnectionError, TimeoutError)
+    )
+    def _create_draft_api_call(self, user_id, body):
+        """
+        Create a draft message via Gmail API with retry logic.
+        
+        Args:
+            user_id (str): The user ID to create the draft for
+            body (dict): The draft data to create
+            
+        Returns:
+            dict: The created draft object from the Gmail API
+            
+        Raises:
+            HttpError: If the API call fails after retries
+        """
+        return self.service.users().drafts().create(userId=user_id, body=body).execute()
+    
+    @exponential_backoff_retry(
+        max_retries=4,
+        base_delay=2.0,
+        retryable_exceptions=(HttpError, ConnectionError, TimeoutError)
+    )
+    def _send_message_api_call(self, user_id, body):
+        """
+        Send a draft message via Gmail API with retry logic.
+        
+        Args:
+            user_id (str): The user ID to send the message as
+            body (dict): The message data to send
+            
+        Returns:
+            dict: The sent message object from the Gmail API
+            
+        Raises:
+            HttpError: If the API call fails after retries
+        """
+        return self.service.users().drafts().send(userId=user_id, body=body).execute()
+    
     def create_draft(self, thread, response_text):
         """
         Create a draft email as a reply to a thread.
@@ -98,12 +142,7 @@ class GmailMessageComposer:
             }
 
             # Create the draft via API
-            draft_result = (
-                self.service.users()
-                .drafts()
-                .create(userId="me", body=create_message)
-                .execute()
-            )
+            draft_result = self._create_draft_api_call(user_id="me", body=create_message)
             
             self.logger.info(f"Draft created successfully with ID: {draft_result.get('id')}")
             self.logger.debug(f"Draft thread ID: {draft_result.get('message', {}).get('threadId')}")
@@ -136,12 +175,7 @@ class GmailMessageComposer:
             Exception: If the API request fails or draft doesn't exist
         """
         try:
-            result = (
-                self.service.users()
-                .drafts()
-                .send(userId="me", body={"id": draft_id})
-                .execute()
-            )
+            result = self._send_message_api_call(user_id="me", body={"id": draft_id})
             self.logger.info(f"Message sent successfully with ID: {result.get('id')}")
             return result
             

@@ -24,9 +24,3 @@ search_memory_tool = create_search_memory_tool(
 def get_current_date() -> str:
     """Get the current date and time with day name."""
     return datetime.now().strftime("%Y-%m-%d, %A, %H:%M")
-
-# @tool
-# def write_email(to: str, subject: str, content: str) -> str:
-#     """Write and send an email."""
-#     # Placeholder response - in real app would send email
-#     return f"Email sent to {to} with subject '{subject}'"

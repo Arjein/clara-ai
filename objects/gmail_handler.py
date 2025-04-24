@@ -119,6 +119,7 @@ class GmailHandler:
         """
         return self.message_composer.create_draft(thread, response_clean)
     
+    # Will not be used, maybe in the future.
     def send_message(self, draft_id):
         """
         Send a draft message.

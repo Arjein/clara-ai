@@ -31,7 +31,3 @@ class EmailResponse(BaseModel):
         
         return formatted_email
     
-#     def complete_email(self) -> str:
-#         """Return a complete email with subject and formatted body"""
-#         #return f"Subject: {self.subject}\n\nTo: {self.recipient_name}\n\n{self.format_email()}\n\nFrom: {self.sender_name}"
-#         return f"{self.format_email()}"

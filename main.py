@@ -68,7 +68,7 @@ def parse_arguments():
     # Core settings
     parser.add_argument('--interval', type=int, default=20,
                         help='Check interval in seconds')
-    parser.add_argument('--limit', type=int, default=5,
+    parser.add_argument('--limit', type=int, default=50,
                         help='Maximum number of emails to fetch')
     
     # Logging and display options
@@ -143,6 +143,20 @@ def main():
     # Load saved threads
     with console.status("[bold green]Loading saved email threads...", spinner="dots"):
         all_threads, last_update = load_saved_threads()
+    
+    # Convert last_update to datetime if it's a string
+    if last_update and isinstance(last_update, str):
+        try:
+            # Try to parse ISO format first
+            last_update = datetime.fromisoformat(last_update)
+        except ValueError:
+            try:
+                # Fallback to a more lenient parser
+                last_update = datetime.strptime(last_update, "%Y-%m-%d %H:%M:%S.%f%z")
+            except ValueError:
+                # If all parsing fails, reset to None
+                logger.warning(f"Could not parse last_update string: {last_update}. Resetting to None.")
+                last_update = None
     
     if last_update:
         logger.info(f"Local Last Update: {last_update} | {last_update.timestamp()}")
@@ -235,6 +249,20 @@ def main():
                         
                         newest_thread = max(all_threads, key=get_safe_datetime)
                         last_update = newest_thread.last_updated
+                        
+                        # Ensure last_update is a datetime object
+                        if last_update and isinstance(last_update, str):
+                            try:
+                                # Try to parse ISO format first
+                                last_update = datetime.fromisoformat(last_update)
+                            except ValueError:
+                                try:
+                                    # Fallback to a more lenient parser
+                                    last_update = datetime.strptime(last_update, "%Y-%m-%d %H:%M:%S.%f%z")
+                                except ValueError:
+                                    # If all parsing fails, keep the previous last_update value
+                                    logger.warning(f"Could not parse last_update string: {last_update}. Keeping previous value.")
+                        
                         logger.info(f"Updated last_update time to {last_update} | {last_update.timestamp()}")
                 
                 next_check_time = datetime.now() + timedelta(seconds=args.interval)

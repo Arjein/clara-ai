@@ -10,58 +10,83 @@ from objects.mail_thread import MailThread
 
 
 def load_saved_threads(base_path='threads'):
-    """Load all saved thread JSON files and initialize MailThread objects"""
+    """
+    Load all saved threads from the database.
+    
+    This function retrieves all threads from the SQLite database
+    and returns them as MailThread objects along with the latest timestamp.
+    
+    Args:
+        base_path: Legacy parameter kept for backwards compatibility
+        
+    Returns:
+        tuple: (list of thread objects, latest timestamp)
+    """
+    logger = logging.getLogger("ClaraSecretary")
+    
+    # Get the database instance
+    db = GmailThread.get_db()
+    
+    # Create a list to hold all threads
     threads = []
     
-    # Make sure both directories exist
-    os.makedirs(base_path, exist_ok=True)
-    os.makedirs(os.path.join(base_path, "draft_ready"), exist_ok=True)
-    
-    # Get files from main threads directory
-    thread_files = [f for f in os.listdir(base_path) 
-                   if f.startswith("thread_") and f.endswith(".json")]
-    
-    # Get files from replied directory
-    replied_files = [f for f in os.listdir(os.path.join(base_path, "draft_ready")) 
-                    if f.startswith("thread_") and f.endswith(".json")]
-    
-    print(f"Found {len(thread_files)} active threads and {len(replied_files)} draft_ready threads")
-    
-    # Process main thread files
-    for file_name in thread_files:
-        file_path = os.path.join(base_path, file_name)
-        try:
-            with open(file_path, 'r') as file:
-                thread_data = json.load(file)
+    try:
+        # Get normal threads from database
+        normal_threads = db.get_all_threads(draft_ready=False)
+        # Get draft_ready threads from database
+        draft_ready_threads = db.get_all_threads(draft_ready=True)
+        
+        logger.info(f"Found {len(normal_threads)} active threads and {len(draft_ready_threads)} draft_ready threads")
+        
+        # Convert normal threads to MailThread objects
+        for thread_data in normal_threads:
+            try:
                 thread = MailThread.fromJson(thread_data)
                 threads.append(thread)
-        except Exception as e:
-            print(f"Error loading thread file {file_name}: {e}")
-    
-    # Process replied thread files
-    for file_name in replied_files:
-        file_path = os.path.join(base_path, "draft_ready", file_name)
-        try:
-            with open(file_path, 'r') as file:
-                thread_data = json.load(file)
+            except Exception as e:
+                logger.error(f"Error loading thread {thread_data.get('id', 'unknown')}: {e}")
+        
+        # Convert draft_ready threads to MailThread objects
+        for thread_data in draft_ready_threads:
+            try:
                 thread = MailThread.fromJson(thread_data)
                 threads.append(thread)
-        except Exception as e:
-            print(f"Error loading thread file {file_name}: {e}")
+            except Exception as e:
+                logger.error(f"Error loading thread {thread_data.get('id', 'unknown')}: {e}")
+        
+        # Sort threads by last_updated (newest first)
+        threads.sort(key=lambda t: t.last_updated.replace(tzinfo=datetime.timezone.utc) if t.last_updated 
+                else datetime.datetime.min.replace(tzinfo=datetime.timezone.utc), 
+                reverse=True)
+        
+        logger.info(f"Successfully loaded {len(threads)} threads")
+        
+        # Get the latest timestamp
+        current_last_update_time = db.get_latest_update_time()
+        
+        # If no timestamp from DB, use the most recent thread
+        if current_last_update_time is None and threads:
+            current_last_update_time = threads[0].last_updated
     
-    # Sort threads by last_updated (newest first)
-    threads.sort(key=lambda t: t.last_updated.replace(tzinfo=datetime.timezone.utc) if t.last_updated 
-             else datetime.datetime.min.replace(tzinfo=datetime.timezone.utc), 
-             reverse=True)
+    except Exception as e:
+        logger.error(f"Error loading threads from database: {e}")
+        logger.debug(traceback.format_exc())
+        threads = []
+        current_last_update_time = None
     
-    print(f"Successfully loaded {len(threads)} threads")
-    current_last_update_time = threads[0].last_updated if threads else None
     return threads, current_last_update_time 
 
 
-
 def get_threads_require_process(all_threads):
+    """
+    Get all threads that require processing.
     
+    Args:
+        all_threads: List of thread objects
+        
+    Returns:
+        list: Threads that need processing
+    """
     threads_require_process = []
     for thread in all_threads:
         if thread.pre_reply_class and thread.reply_class == None and thread.draft_ready == False and thread.replied == False:
@@ -70,7 +95,20 @@ def get_threads_require_process(all_threads):
     
     return threads_require_process
 
+
 def process_thread(thread: GmailThread, gmail_handler, secretary_agent, logger=None):
+    """
+    Process a thread with the secretary agent.
+    
+    Args:
+        thread: Thread to process
+        gmail_handler: Gmail handler instance
+        secretary_agent: Secretary agent instance
+        logger: Optional logger instance
+        
+    Returns:
+        bool: Success status
+    """
     if logger is None:
         logger = logging.getLogger("ClaraSecretary")
     try: 
@@ -80,23 +118,20 @@ def process_thread(thread: GmailThread, gmail_handler, secretary_agent, logger=N
             'email_thread': body,
         }
         print(f"Processsing: {thread.subject}")
-        #response = secretary_agent.secretary_agent.invoke({"email_input": email_input})
         response = secretary_agent.generate_response({"email_input": email_input})
         classification = response.get("classification_result")
         print('Classification:', classification)
         thread.reply_class = classification
         
-        #TODO: Update the last_updated timestamp to now  Not sure how it works 
+        # Update the last_updated timestamp to now
         thread.last_updated = datetime.datetime.now()
 
         if classification != 'ignore' and classification != 'notify':
-
             # Create a draft response
             resp = response['structured_response']
             response_clean = EmailResponse.format_email(resp)
             gmail_handler.create_draft(thread, response_clean)
         
-
         label_to_add = None
         if classification == 'ignore':
             label_to_add = gmail_handler.labels_dict['CLARA - IGNORED']
@@ -107,7 +142,10 @@ def process_thread(thread: GmailThread, gmail_handler, secretary_agent, logger=N
         elif classification == 'respond':
             label_to_add = gmail_handler.labels_dict['CLARA - READY TO SEND']
         
-        thread.label_ids.append(label_to_add)
+        # Only add label if it doesn't already exist in the list
+        if label_to_add and label_to_add not in thread.label_ids:
+            thread.label_ids.append(label_to_add)
+            
         thread.save_thread(gmail_handler=gmail_handler)
         return True
     

@@ -18,7 +18,7 @@ import logging
 from objects.gmail_message import GmailMessage
 from objects.mail_thread import MailThread
 from dateutil import parser
-
+from objects.thread_database import ThreadDatabase
 from user import AppUser
 
 class GmailThread(MailThread):
@@ -30,6 +30,16 @@ class GmailThread(MailThread):
     such as label management, thread state, and message organization while providing
     a consistent interface through its parent MailThread class.
     """
+
+    # Class variable for database access
+    _db = None
+    
+    @classmethod
+    def get_db(cls):
+        """Get or initialize the thread database instance."""
+        if cls._db is None:
+            cls._db = ThreadDatabase()
+        return cls._db
 
     def __init__(self, thread: dict):
         """
@@ -130,10 +140,10 @@ class GmailThread(MailThread):
     
     def save_thread(self, gmail_handler=None, base_path='threads'):
         """
-        Save thread to disk and update its Gmail labels.
+        Save thread to the database and update its Gmail labels.
         
         This method performs two key operations:
-        1. Calls the parent class's save_thread method to persist the thread to disk
+        1. Saves the thread data to the SQLite database
         2. Updates the Gmail labels on the thread based on its current state
         
         The method ensures that Gmail labels accurately reflect the thread's
@@ -141,14 +151,20 @@ class GmailThread(MailThread):
         
         Args:
             gmail_handler: Handler object for Gmail API operations (usually GmailLabelManager)
-            base_path (str): Directory path for saving thread data to disk
+            base_path (str): Legacy parameter, kept for compatibility
             
         Returns:
             None
         """
-        # Save thread to disk via parent class
-        super().save_thread()
-
+        # Skip API call if no handler provided (for testing/migration)
+        if gmail_handler is None:
+            self.logger.debug(f"Saving thread {self.id} to database only (no Gmail API update)")
+            # Use existing toJson method for serialization
+            thread_dict = self.toJson()
+            # Save to database
+            GmailThread.get_db().save_thread(thread_dict, self.draft_ready)
+            return
+            
         # Track labels to be removed
         removed_labels = []
 
@@ -156,7 +172,7 @@ class GmailThread(MailThread):
         if self.replied:
             # If thread has been replied to, remove all classification labels
             for label_name in ['CLARA - IGNORED', 'CLARA - FYI', 
-                               'CLARA - NEEDS YOUR INPUT', 'CLARA - READY TO SEND']:
+                             'CLARA - NEEDS YOUR INPUT', 'CLARA - READY TO SEND']:
                 if AppUser.label_id_encode_dict[label_name] in self.label_ids:
                     removed_labels.append(AppUser.label_id_encode_dict[label_name])
                     self.label_ids.remove(AppUser.label_id_encode_dict[label_name])
@@ -176,8 +192,13 @@ class GmailThread(MailThread):
             "removeLabelIds": removed_labels
         }
         gmail_handler.service.users().threads().modify(id=self.id, userId='me', body=label_modifications).execute()
+        
+        # Use existing toJson method for serialization
+        thread_dict = self.toJson()
+        
+        # Save to database
+        GmailThread.get_db().save_thread(thread_dict, self.draft_ready)
 
-
-
+    
 
 

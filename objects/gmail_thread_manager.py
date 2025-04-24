@@ -14,6 +14,8 @@ import logging
 import traceback
 from objects.gmail_thread import GmailThread
 from objects.gmail_utils import parse_timestamp_from_query
+from objects.retry_utils import exponential_backoff_retry
+from googleapiclient.errors import HttpError
 
 class GmailThreadManager:
     """
@@ -38,6 +40,60 @@ class GmailThreadManager:
         self.logger = logging.getLogger("ClaraSecretary")
         self.service = service
         self.label_manager = label_manager
+
+    @exponential_backoff_retry(
+        max_retries=3,
+        base_delay=2.0,
+        retryable_exceptions=(HttpError, ConnectionError, TimeoutError)
+    )
+    def _fetch_thread_data(self, user_id, thread_id):
+        """
+        Fetch thread data from Gmail API with retry logic.
+        
+        This method is wrapped with exponential backoff retry to handle
+        transient API errors and rate limits gracefully.
+        
+        Args:
+            user_id (str): The user ID to fetch data for
+            thread_id (str): The ID of the thread to fetch
+            
+        Returns:
+            dict: Raw thread data from Gmail API
+            
+        Raises:
+            HttpError: If the API request fails after retries
+        """
+        return self.service.users().threads().get(userId=user_id, id=thread_id).execute()
+    
+    @exponential_backoff_retry(
+        max_retries=3,
+        base_delay=2.0,
+        retryable_exceptions=(HttpError, ConnectionError, TimeoutError)
+    )
+    def _list_threads(self, user_id, query, limit):
+        """
+        List threads from Gmail API with retry logic.
+        
+        This method is wrapped with exponential backoff retry to handle
+        transient API errors and rate limits gracefully.
+        
+        Args:
+            user_id (str): The user ID to fetch data for
+            query (str): Gmail search query
+            limit (int): Maximum number of threads to return
+            
+        Returns:
+            list: List of thread metadata from Gmail API
+            
+        Raises:
+            HttpError: If the API request fails after retries
+        """
+        response = self.service.users().threads().list(
+            userId=user_id, 
+            q=query, 
+            maxResults=limit
+        ).execute()
+        return response.get('threads', [])
         
     def fetch_single_thread(self, thread_id):
         """
@@ -57,7 +113,7 @@ class GmailThreadManager:
         """
         try:
             # Get thread data by ID
-            tdata = self.service.users().threads().get(userId='me', id=thread_id).execute()
+            tdata = self._fetch_thread_data(user_id='me', thread_id=thread_id)
             thread = GmailThread(tdata)
             thread.save_thread(self.label_manager)
             return thread
@@ -97,11 +153,7 @@ class GmailThreadManager:
             parse_timestamp_from_query(query)
             
             # Get threads from Gmail API
-            threads = self.service.users().threads().list(
-                userId=user_id, 
-                q=query, 
-                maxResults=limit
-            ).execute().get('threads', [])
+            threads = self._list_threads(user_id=user_id, query=query, limit=limit)
             
             if not threads:
                 self.logger.debug("No threads found matching query in Gmail API")
@@ -113,7 +165,7 @@ class GmailThreadManager:
             for thread in threads:
                 try:
                     # Get thread data by ID
-                    tdata = self.service.users().threads().get(userId=user_id, id=thread["id"]).execute()
+                    tdata = self._fetch_thread_data(user_id=user_id, thread_id=thread["id"])
                     thread_object = GmailThread(tdata)
                     self.logger.debug(f'Extracted: {thread_object.subject}')
                     
