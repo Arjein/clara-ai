@@ -19,8 +19,9 @@ class MailThread:
         self.label_ids = threadDict.get('label_ids', [])
         self.last_updated = threadDict.get('last_updated', datetime.datetime.now())
         self.reply_class = threadDict.get('reply_class', None)
-        self.replied = threadDict.get('replied', None)
         self.pre_reply_class = threadDict.get('pre_reply_class', None)
+        self.draft_ready = threadDict.get('draft_ready', None)
+        self.replied = threadDict.get('replied', None)
         
 
     @classmethod
@@ -72,13 +73,14 @@ class MailThread:
             'messages': message_list,
             'label_ids': self.label_ids,
             'last_updated': self.last_updated.isoformat() if isinstance(self.last_updated, datetime.datetime) else self.last_updated,
-            'reply_class': self.reply_class,
-            'replied': self.replied,
             'pre_reply_class': self.pre_reply_class,
+            'reply_class': self.reply_class,
+            'draft_ready': self.draft_ready,
+            'replied': self.replied,
         }
 
     def __str__(self):
-        return f"MailThread(id:{self.id}\nSubject: {self.subject}\nPre_reply_class: {self.pre_reply_class}\nReply_class={self.reply_class}\nReplied: {self.replied}\nLast_updated: {self.last_updated})"
+        return f"MailThread(id:{self.id}\nSubject: {self.subject}\nPre_reply_class: {self.pre_reply_class}\nReply_class={self.reply_class}\nDraft_ready: {self.draft_ready}\nReplied:{self.replied}\nLast_updated: {self.last_updated})"
 
     def create_prompt_for_response(self):
         """
@@ -111,19 +113,19 @@ class MailThread:
         
         # Create directories if they don't exist
         os.makedirs(base_path, exist_ok=True)
-        os.makedirs(f"{base_path}/replied", exist_ok=True)
+        os.makedirs(f"{base_path}/draft_ready", exist_ok=True)
         
         # Determine file paths for both possible locations
         standard_path = f"{base_path}/thread_{self.id}.json"
-        replied_path = f"{base_path}/replied/thread_{self.id}.json"
+        draft_ready_path = f"{base_path}/draft_ready/thread_{self.id}.json"
         
         # Determine correct current path based on thread status
-        if self.replied:
-            current_path = replied_path
+        if self.draft_ready:
+            current_path = draft_ready_path
             old_path = standard_path
         else:
             current_path = standard_path
-            old_path = replied_path
+            old_path = draft_ready_path
         
         # Remove file from incorrect location if it exists
         if os.path.exists(old_path):

@@ -1,3 +1,18 @@
+"""
+Clara AI - Gmail Assistant
+
+This application serves as an AI-powered email assistant that works with Gmail to help
+manage and respond to your inbox. It provides the following key features:
+
+- Automatically monitoring Gmail inbox for new messages
+- Classifying and organizing emails with Gmail labels
+- Generating intelligent draft responses
+- Maintaining email thread history for context
+- Operating on a configurable polling interval
+
+The application uses OAuth2 for Gmail authentication and leverages Gmail's API
+for all email operations while maintaining state of threads between executions.
+"""
 import json
 import logging
 import argparse
@@ -16,11 +31,11 @@ from rich import print as rprint
 from tqdm import tqdm
 from agents.secretary_agent import SecretaryAgent
 from objects.gmail_handler import GmailHandler
-from transformers import pipeline
 from user import AppUser
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from agents.email_response import EmailResponse
 from helpers import get_threads_require_process, load_saved_threads, process_thread
+
 
 # Create console instance for rich output
 console = Console()
@@ -46,14 +61,14 @@ def setup_logging(debug=False, log_file="clara_secretary.log"):
 def parse_arguments():
     """Parse command line arguments with enhanced options"""
     parser = argparse.ArgumentParser(
-        description='Clara Secretary - An AI Email Assistant',
+        description='Clara AI - Your E-mail Assistant',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     
     # Core settings
-    parser.add_argument('--interval', type=int, default=300,
+    parser.add_argument('--interval', type=int, default=20,
                         help='Check interval in seconds')
-    parser.add_argument('--limit', type=int, default=10,
+    parser.add_argument('--limit', type=int, default=5,
                         help='Maximum number of emails to fetch')
     
     # Logging and display options
@@ -69,7 +84,7 @@ def parse_arguments():
 def display_banner():
     """Display a welcome banner with app information"""
     banner_text = """
-    [bold blue]Clara Secretary[/bold blue] - [italic]Your AI Email Assistant[/italic]
+    [bold blue]Clara AI[/bold blue] - [italic]Your Email Assistant[/italic]
     
     Helping you manage your inbox smartly and efficiently
     """
@@ -77,7 +92,7 @@ def display_banner():
 
 def display_status(all_threads, last_update, user_email):
     """Display the current status of the application"""
-    table = Table(title="Clara Secretary Status")
+    table = Table(title="Clara AI Status")
     
     table.add_column("Setting", style="cyan")
     table.add_column("Value", style="green")
@@ -90,7 +105,8 @@ def display_status(all_threads, last_update, user_email):
 
 def handle_exit(signum, frame):
     """Handle exit signals gracefully"""
-    console.print("\n[yellow]Received exit signal. Shutting down Clara Secretary...[/yellow]")
+    logger = logging.getLogger("ClaraSecretary")
+    logger.warning("Received exit signal. Shutting down Clara Secretary...")
     sys.exit(0)
 
 def main():
@@ -114,6 +130,7 @@ def main():
     
     # Make sure we have a valid user email
     if not AppUser.email:
+        logger.error("Error: Could not determine user email from Gmail authentication")
         console.print("[bold red]Error: Could not determine user email from Gmail authentication[/bold red]")
         exit(1)
     
@@ -136,15 +153,20 @@ def main():
     display_status(all_threads, last_update, AppUser.email)
     
     try:
-        while True:    
+        while True:    # TODO: FIx the Timestamp Issue (I Think i  fixed it).
             try:
                 # Fetch threads with integrated analysis
                 if user_login_method == 'gmail':
                     query = 'category:primary'
                     if last_update:
-                        query += f" after:{int((last_update.timestamp()) + 15)}" # Adding 15 seconds buffer
-                    
-                    logger.info(f"Query: {query}")
+                        
+                        # Get the timestamp directly from last_update
+                        timestamp_seconds = int(last_update.timestamp()) + 15
+                        
+                        # Use the timestamp directly in the query
+                        query += f" after:{timestamp_seconds}"
+                        
+                        logger.info(f"Query: {query} (timestamp from: {last_update.isoformat()})")
                     
                     with console.status(f"[bold green]Fetching emails with query: {query}...", spinner="dots"):
                         fetched_threads = gmail_handler.fetch_threads( 
@@ -155,18 +177,35 @@ def main():
                     
                     # Display fetched threads
                     if fetched_threads:
+                        logger.info(f"Found {len(fetched_threads)} new emails")
                         console.print(f"\n[bold green]Found {len(fetched_threads)} new emails:[/bold green]")
                         for t in fetched_threads:
+                            logger.debug(f"Processing thread: {t.subject}")
                             console.print(f"  • [cyan]{t.subject}[/cyan]")
-                            if t not in all_threads:
+                            thread_exists = False
+                            for i, existing_thread in enumerate(all_threads):
+                                if existing_thread.id == t.id:
+                                    # Update the existing thread with new data
+                                    all_threads[i] = t
+                                    thread_exists = True
+                                    logger.debug(f"Updated existing thread: {t.id}")
+                                    console.print(f"    [yellow]Updated existing thread[/yellow]")
+                                    break
+
+                            # If thread doesn't exist, add it
+                            if not thread_exists:
                                 all_threads.append(t)
+                                logger.debug(f"Added new thread: {t.id}")
+                                console.print(f"    [green]Added new thread[/green]")
                     else:
+                        logger.info("No new emails found")
                         console.print("[yellow]No new emails found[/yellow]")
                     
                     # Process threads that need attention
                     threads_require_process = get_threads_require_process(all_threads)
                     
                     if threads_require_process:
+                        logger.info(f"Processing {len(threads_require_process)} emails that require attention")
                         console.print(f"\n[bold green]Processing {len(threads_require_process)} emails that require attention...[/bold green]")
                         
                         with Progress(
@@ -185,7 +224,16 @@ def main():
                     
                     # Update timestamp only if we have threads
                     if all_threads:
-                        newest_thread = max(all_threads, key=lambda t: t.last_updated if t.last_updated else datetime.min)
+                        min_datetime = datetime.min.replace(tzinfo=timezone.utc)
+                           # Function to safely get last_updated with consistent timezone
+                        def get_safe_datetime(thread):
+                            if not thread.last_updated:
+                                return min_datetime
+                            else:
+                                # If it already has timezone info, convert to UTC
+                                return thread.last_updated.astimezone(timezone.utc)
+                        
+                        newest_thread = max(all_threads, key=get_safe_datetime)
                         last_update = newest_thread.last_updated
                         logger.info(f"Updated last_update time to {last_update} | {last_update.timestamp()}")
                 
@@ -212,12 +260,14 @@ def main():
                 logger.error(f"Error in main processing loop: {e}")
                 logger.debug(traceback.format_exc())
                 console.print(f"[bold red]Error encountered: {e}[/bold red]")
+                logger.warning(f"Retrying in 60 seconds...")
                 console.print("[yellow]Retrying in 60 seconds...[/yellow]")
                 time.sleep(60)  
 
     except KeyboardInterrupt:
-        console.print("\n[bold yellow]Shutting down Clara Secretary...[/bold yellow]")
-        console.print("[green]Thank you for using Clara Secretary![/green]")
+        logger.info("Shutting down Clara AI")
+        console.print("\n[bold yellow]Shutting down Clara AI...[/bold yellow]")
+        console.print("[green]Thank you for using Clara AI![/green]")
 
 
 if __name__ == "__main__":

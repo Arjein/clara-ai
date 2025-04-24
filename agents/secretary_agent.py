@@ -1,45 +1,89 @@
-from langgraph.prebuilt import create_react_agent, ToolNode
+"""
+Secretary Agent for Clara AI
+
+This module provides the main Secretary Agent that coordinates the email processing system.
+It acts as a facade that integrates all the specialized components into a cohesive system.
+"""
+
 import os
+import logging
 import dotenv
-from typing import Annotated, Any, Dict, Optional, List, Union, Literal
-from typing_extensions import TypedDict
-from langgraph.graph import StateGraph, START, END
-from langgraph.graph.message import add_messages
-from langgraph.types import Command
-from langchain_openai import AzureChatOpenAI
-from langchain.tools import tool
-from pydantic import BaseModel, Field
-from datetime import datetime
+from typing import Dict, Any, List, Optional
+from langchain.chat_models import init_chat_model
 from user import AppUser
-from objects.mail_thread import MailThread
 from agents.email_response import Router, EmailResponse
-from agents.agent_tools import get_current_date, write_email, schedule_meeting, check_calendar_availability
-from agents.prompts import agent_system_prompt, triage_system_prompt, triage_user_prompt
+from agents.agent_tools import get_current_date, manage_memory_tool, search_memory_tool
+from agents.prompts import agent_system_prompt_memory, triage_system_prompt, triage_user_prompt
+from agents.memory_manager import MemoryManager
+from agents.email_triage import EmailTriageSystem
+from agents.response_generator import ResponseGenerator
+from agents.workflow_manager import WorkflowManager
 
 _ = dotenv.load_dotenv()
 
-class State(TypedDict):
-    email_input: dict
-    messages: Annotated[list, add_messages]
-    final_response: Optional[EmailResponse]
-    classification_result: Optional[str]  # Add this field
-
 class SecretaryAgent:
+    """
+    Main agent class that coordinates email processing components.
+    
+    This class acts as a facade, integrating the specialized components:
+    - Memory management
+    - Email triage/classification
+    - Response generation
+    - Workflow coordination
+    
+    It maintains the same functionality as before but with improved modularity.
+    """
+    
     def __init__(self, user_profile = None):
-        self.llm = AzureChatOpenAI(
-            model='o3-mini',
-            azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
-            api_key=os.environ["AZURE_OPENAI_API_KEY"],
-            openai_api_version=os.environ["AZURE_OPENAI_API_VERSION"],
+        """
+        Initialize the secretary agent with its component systems.
+        
+        Args:
+            user_profile: Optional user profile to override defaults
+        """
+        self.logger = logging.getLogger("ClaraSecretary")
+        
+        # Initialize the language model
+        self.llm = init_chat_model('azure_openai:o3-mini')
+        
+        # Configure user profile
+        self.profile = self._init_user_profile(user_profile)
+        self.logger.info(f"User Profile: {self.profile}")
+        
+        # Configuration for langgraph
+        self.config = {"configurable": {'langgraph_user_id': AppUser.email}}
+        
+        # Define triage rules and agent instructions
+        self.prompt_instructions = self._init_prompt_instructions()
+        
+        # Initialize component systems
+        self.memory_manager = MemoryManager()
+        self.tools = self._init_tools()
+        self.triage_system = EmailTriageSystem(self.llm, triage_system_prompt)
+        self.response_generator = ResponseGenerator(self.llm, agent_system_prompt_memory, self.tools)
+        self.workflow_manager = WorkflowManager(
+            self.triage_system, 
+            self.response_generator,
+            self.memory_manager
         )
-        self.profile = {
+        
+        # Configure all components
+        self._configure_components()
+        
+    def _init_user_profile(self, user_profile) -> Dict[str, str]:
+        """Initialize the user profile with defaults or overrides."""
+        if user_profile:
+            return user_profile
+            
+        return {
             "name": AppUser.name,
             "full_name": AppUser.get_full_name(),
             "user_profile_background": "Recent Graduate with BSc in Computer Engineering and MSc in Engineering with Management. Who have a passion for AI/ML Engineering",
         }
-        print('User Profile:', self.profile)
         
-        self.prompt_instructions = {
+    def _init_prompt_instructions(self) -> Dict[str, Any]:
+        """Initialize the triage rules and agent instructions."""
+        return {
             "triage_rules": {
                 "ignore": "Marketing newsletters, spam emails, mass company announcements",
                 "notify": "Team member out sick, build system notifications, project status updates",
@@ -48,177 +92,52 @@ class SecretaryAgent:
             },
             "agent_instructions": f"Use these tools when appropriate to help manage {self.profile['name']}'s tasks efficiently."
         }
-        self.llm_router = self.llm.with_structured_output(Router)
-
-        self.system_prompt = triage_system_prompt.format(
-            full_name=self.profile["full_name"],
-            name=self.profile["name"],
-            examples=None,
-            user_profile_background=self.profile["user_profile_background"],
-            triage_no=self.prompt_instructions["triage_rules"]["ignore"],
-            triage_notify=self.prompt_instructions["triage_rules"]["notify"],
-            triage_info_required=self.prompt_instructions["triage_rules"]["info_required"],
-            triage_email=self.prompt_instructions["triage_rules"]["respond"],
-        )
         
-        self.tools = [write_email, get_current_date, EmailResponse]
-        self.secretary_agent = self._build_graph()
-    
-    def create_prompt(self, state):
-        system_content = agent_system_prompt.format(
-            instructions=self.prompt_instructions["agent_instructions"],
-            **self.profile
-        )
-        
-        # Add instructions to use EmailResponse tool for the final answer
-        system_content += "\n\nFor your final response, use the EmailResponse tool with these fields: reasoning, subject, greeting, content, signature, recipient_name, and sender_name."
-        
+    def _init_tools(self) -> List[Any]:
+        """Initialize the tools for the response agent."""
         return [
-            {"role": "system", "content": system_content}
-        ] + state['messages']
-    
-    def triage_router(self, state: State) -> Command[Literal["agent", "__end__"]]:
-        subject = state['email_input']['subject']
-        email_thread = state['email_input']['email_thread']
-
-        user_prompt = triage_user_prompt.format(
-            subject=subject, 
-            email_thread=email_thread
+            get_current_date, 
+            manage_memory_tool,
+            search_memory_tool,
+        ]
+        
+    def _configure_components(self) -> None:
+        """Configure all component systems with the necessary settings."""
+        # Configure triage system
+        self.triage_system.configure(
+            self.prompt_instructions["triage_rules"],
+            self.profile
         )
         
-        result = self.llm_router.invoke(
-            [
-                {"role": "system", "content": self.system_prompt},
-                {"role": "user", "content": user_prompt},
-            ]
+        # Configure response generator
+        self.response_generator.configure(
+            self.profile,
+            self.prompt_instructions["agent_instructions"],
+            self.memory_manager.get_store()
         )
         
-        print('Classification Result:', result)
-        classification = result.classification
-        update = {"classification_result": classification}
-    
-        if result.classification == "respond":
-            print("📧 Classification: RESPOND - This email requires a response")
-            goto = "agent"
-            update.update({
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": f"Draft a response to this email on behalf of {self.profile['full_name']}:\n\nSubject: {subject}\n\nThread: {email_thread}"
-                    }
-                ]
-            })
-
-        elif result.classification == "info_required":
-            print("🔔 Classification: INFO_REQUIRED - This email requires a response")
-            goto = "agent" 
-            # TODO: Burayi daha saglam yapman lazim!
-            update.update({
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": f"Write an email response as if you are {self.profile['full_name']}. Use [BRACKETS] to indicate any details that {self.profile['name']} needs to provide, such as confirming a time, granting permission, or adding missing information.\n\nSubject: {subject}\n\nEmail Thread:\n{email_thread}"
-                    }
-                ]
-            })
-
-        elif result.classification == "ignore":
-            print("🚫 Classification: IGNORE - This email can be safely ignored")
-            update = update
-            goto = END
-        elif result.classification == "notify":
-            print("🔔 Classification: NOTIFY - This email contains important information")
-            update = update
-            goto = END
-        else:
-            raise ValueError(f"Invalid classification: {result.classification}")
-        
-        return Command(goto=goto, update=update)
-    
-    def call_model(self, state: State):
-        # Bind the tools to the model with tool_choice="any" to force tool usage
-        model_with_tools = self.llm.bind_tools(self.tools, tool_choice="any")
-        
-        # Call the model with the current messages
-        response = model_with_tools.invoke(self.create_prompt(state))
-        
-        # Return the model's response to be added to messages
-        return {"messages": [response]}
-    
-    def should_continue(self, state: State):
-        messages = state["messages"]
-        last_message = messages[-1]
-        
-        # Check if the last message has tool calls
-        if not hasattr(last_message, "tool_calls") or not last_message.tool_calls:
-            return "continue"
-        
-        # If there is an EmailResponse tool call, process it
-        for tool_call in last_message.tool_calls:
-            if tool_call["name"] == "EmailResponse":
-                return "respond"
-        
-        # Otherwise continue with tools
-        return "continue"
-    
-    def respond(self, state: State):
-        messages = state["messages"]
-        last_message = messages[-1]
-        
-        # Find the EmailResponse tool call
-        email_response_call = None
-        for tool_call in last_message.tool_calls:
-            if tool_call["name"] == "EmailResponse":
-                email_response_call = tool_call
-                break
-        
-        if not email_response_call:
-            raise ValueError("No EmailResponse tool call found")
-        
-        # Create an EmailResponse from the tool call arguments
-        email_response = EmailResponse(**email_response_call["args"])
-        
-        # Create a tool message
-        tool_message = {
-            "type": "tool",
-            "content": "Email response created successfully",
-            "tool_call_id": email_response_call["id"]
-        }
-        
-        # Return the final response and add the tool message
-        return {"final_response": email_response, "messages": [tool_message]}
-    
-    def _build_graph(self):
-        # Create a new workflow
-        workflow = StateGraph(State)
-        
-        # Add nodes
-        workflow.add_node("triage_router", self.triage_router)
-        workflow.add_node("agent", self.call_model)
-        workflow.add_node("tools", ToolNode(self.tools))
-        workflow.add_node("respond", self.respond)
-        
-        # Set entry point - use "triage_router" as the entry point
-        workflow.set_entry_point("triage_router")
-        
-        # Add edges (don't connect START explicitly)
-        workflow.add_edge("triage_router", "agent")
-        
-        # Add conditional edges from agent
-        workflow.add_conditional_edges(
-            "agent",
-            self.should_continue,
-            {
-                "continue": "tools",
-                "respond": "respond"
-            }
+        # Configure workflow manager
+        self.workflow_manager.configure(
+            self.profile,
+            triage_user_prompt
         )
         
-        # Complete the cycle
-        workflow.add_edge("tools", "agent")
-        workflow.add_edge("respond", END)
+    def generate_response(self, email_input: Dict[str, Any]) -> Any:
+        """
+        Generate a response for the given email.
         
-        return workflow.compile()
-    
+        This method routes the email through the workflow system and returns the result.
+        
+        Args:
+            email_input: Dictionary containing email subject and thread content
+            
+        Returns:
+            The processed response from the workflow
+        """
+        return self.workflow_manager.process_email(
+            email_input,
+            config=self.config
+        )
+
 
 

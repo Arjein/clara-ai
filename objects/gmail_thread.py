@@ -1,34 +1,78 @@
+"""
+Gmail Thread Model
+
+This module provides the GmailThread class, which represents a Gmail conversation thread.
+It handles the conversion of raw Gmail API thread data into a structured object with
+features specific to Clara AI's functionality, including:
+
+- Thread classification and categorization
+- Label management specific to Gmail
+- Time and date handling
+- Conversation state tracking
+
+The GmailThread extends the base MailThread class to implement Gmail-specific functionality
+while maintaining compatibility with the generic mail handling system.
+"""
 from datetime import datetime
+import logging
 from objects.gmail_message import GmailMessage
 from objects.mail_thread import MailThread
 from dateutil import parser
 
-from user import AppUser  # Add this import
-
+from user import AppUser
 
 class GmailThread(MailThread):
     """
-    This class represents a Gmail thread in the system.
+    A specialized thread class that represents a Gmail conversation thread.
+    
+    This class converts raw Gmail API thread data into a structured object that
+    can be used throughout the Clara AI system. It handles Gmail-specific details
+    such as label management, thread state, and message organization while providing
+    a consistent interface through its parent MailThread class.
     """
 
     def __init__(self, thread: dict):
+        """
+        Initialize a Gmail thread from raw Gmail API data.
+        
+        Args:
+            thread (dict): Raw thread data from the Gmail API, containing
+                messages and metadata about the conversation thread.
+        """
+        self.logger = logging.getLogger("ClaraSecretary")
         thread_dict = self.extract_thread(thread)
         super().__init__(thread_dict)
 
     def extract_thread(self, thread: dict):
-
+        """
+        Convert raw Gmail API thread data into a structured dictionary.
+        
+        This method:
+        1. Transforms raw Gmail message data into GmailMessage objects
+        2. Collects and normalizes label IDs from all messages
+        3. Parses and validates message dates
+        4. Determines thread state (replied, draft ready)
+        5. Classifies the thread for Clara AI processing
+        
+        Args:
+            thread (dict): Raw thread data from the Gmail API
+            
+        Returns:
+            dict: A structured dictionary containing organized thread data
+                with consistent types and values
+        """
         messages = [GmailMessage(message) for message in thread['messages']]   
         label_ids = []
 
+        # Extract labels from messages
         for message in messages:
             if message.label_ids:
                 # Add any new label IDs that aren't already in our list
                 for label_id in message.label_ids:
                     if label_id not in label_ids and label_id != 'SENT' and label_id != 'DRAFT':
                         label_ids.append(label_id)
-        print('Label IDs:', label_ids)
 
-       # Process dates with a more flexible parser
+        # Process dates with a more flexible parser
         valid_dates = []
         for message in messages:
             if message.date:
@@ -40,22 +84,34 @@ class GmailThread(MailThread):
                         date_obj = parser.parse(message.date)
                         valid_dates.append(date_obj)
                     except Exception as e:
-                        print(f"Warning: Could not parse date value: {message.date}, Error: {e}")
+                        self.logger.warning(f"Could not parse date value: {message.date}, Error: {e}")
         
+        # Set last updated date to the most recent message date
         last_updated = max(valid_dates) if valid_dates else datetime.now()
         
-        # Make this bETTERRR
-        if AppUser.label_id_encode_dict['CLARA - IGNORED'] in label_ids:
-            reply_class='ignore'
-        elif AppUser.label_id_encode_dict['CLARA - FYI'] in label_ids:
-            reply_class='notify'
-        elif AppUser.label_id_encode_dict['CLARA - NEEDS YOUR INPUT'] in label_ids:
-            reply_class='info_required'
-        elif AppUser.label_id_encode_dict['CLARA - READY TO SEND'] in label_ids:
-            reply_class='respond'
-        else:
+        # Determine thread state based on labels
+        replied = any(label in messages[-1].label_ids for label in ['SENT'])
+        draft_ready = any(label in messages[-1].label_ids for label in ['DRAFT'])
+        
+        # Set appropriate reply classification based on thread state
+        if replied:
+            label_ids.append(AppUser.label_id_encode_dict['CLARA - REPLIED'])
+            draft_ready = False
             reply_class = None
+        else:
+            # Classify thread based on Clara AI labels
+            if AppUser.label_id_encode_dict['CLARA - IGNORED'] in label_ids:
+                reply_class='ignore'
+            elif AppUser.label_id_encode_dict['CLARA - FYI'] in label_ids:
+                reply_class='notify'
+            elif AppUser.label_id_encode_dict['CLARA - NEEDS YOUR INPUT'] in label_ids:
+                reply_class='info_required'
+            elif AppUser.label_id_encode_dict['CLARA - READY TO SEND'] in label_ids:
+                reply_class='respond'
+            else:
+                reply_class = None
 
+        # Create the structured thread dictionary
         extracted_thread = {
             'id': thread['id'],
             'history_id': thread['historyId'],
@@ -66,22 +122,62 @@ class GmailThread(MailThread):
             'latest_from': messages[-1].sender_email,
             'latest_to': messages[-1].recipient_email,
             'reply_class': reply_class,
-            'replied': any(label in messages[-1].label_ids for label in ['SENT', 'DRAFT']),
             'pre_reply_class': all(label in messages[-1].label_ids for label in ['IMPORTANT', 'CATEGORY_PERSONAL']),
+            'draft_ready': draft_ready,
+            'replied': replied
         }
         return extracted_thread
     
-
     def save_thread(self, gmail_handler=None, base_path='threads'):
+        """
+        Save thread to disk and update its Gmail labels.
+        
+        This method performs two key operations:
+        1. Calls the parent class's save_thread method to persist the thread to disk
+        2. Updates the Gmail labels on the thread based on its current state
+        
+        The method ensures that Gmail labels accurately reflect the thread's
+        classification and processing state in the Clara AI system.
+        
+        Args:
+            gmail_handler: Handler object for Gmail API operations (usually GmailLabelManager)
+            base_path (str): Directory path for saving thread data to disk
+            
+        Returns:
+            None
+        """
+        # Save thread to disk via parent class
         super().save_thread()
+
+        # Track labels to be removed
+        removed_labels = []
+
+        # Update labels based on thread state
+        if self.replied:
+            # If thread has been replied to, remove all classification labels
+            for label_name in ['CLARA - IGNORED', 'CLARA - FYI', 
+                               'CLARA - NEEDS YOUR INPUT', 'CLARA - READY TO SEND']:
+                if AppUser.label_id_encode_dict[label_name] in self.label_ids:
+                    removed_labels.append(AppUser.label_id_encode_dict[label_name])
+                    self.label_ids.remove(AppUser.label_id_encode_dict[label_name])
+        else:
+            # If thread hasn't been replied to, remove the REPLIED label if present
+            if AppUser.label_id_encode_dict['CLARA - REPLIED'] in self.label_ids:
+                removed_labels.append(AppUser.label_id_encode_dict['CLARA - REPLIED'])
+                self.label_ids.remove(AppUser.label_id_encode_dict['CLARA - REPLIED'])
+
+        # Log label modifications for debugging
+        self.logger.debug(f'AddLabelIds: {self.label_ids}')
+        self.logger.debug(f'Removed Labels: {removed_labels}')
         
+        # Apply label modifications via Gmail API
         label_modifications = {
-                'addLabelIds': self.label_ids,
-            }
-        
+            'addLabelIds': self.label_ids,
+            "removeLabelIds": removed_labels
+        }
         gmail_handler.service.users().threads().modify(id=self.id, userId='me', body=label_modifications).execute()
 
-        
-        
 
-        
+
+
+
