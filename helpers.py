@@ -1,80 +1,46 @@
 import datetime
-import json
 import logging
-import os
 import traceback
-
+from user import AppUser
 from agents.email_response import EmailResponse
-from objects.gmail_thread import GmailThread
-from objects.mail_thread import MailThread
 
 
 def load_saved_threads(base_path='threads'):
     """
-    Load all saved threads from the database.
+    Get the last email update time from CosmosDB and return an empty thread list.
     
-    This function retrieves all threads from the SQLite database
-    and returns them as MailThread objects along with the latest timestamp.
+    This function no longer loads threads from the file system but instead
+    just retrieves the last email update time from CosmosDB.
     
     Args:
         base_path: Legacy parameter kept for backwards compatibility
         
     Returns:
-        tuple: (list of thread objects, latest timestamp)
+        tuple: (empty list, last update timestamp from CosmosDB)
     """
     logger = logging.getLogger("ClaraSecretary")
     
-    # Get the database instance
-    db = GmailThread.get_db()
-    
-    # Create a list to hold all threads
-    threads = []
-    
     try:
-        # Get normal threads from database
-        normal_threads = db.get_all_threads(draft_ready=False)
-        # Get draft_ready threads from database
-        draft_ready_threads = db.get_all_threads(draft_ready=True)
+        # Get the user's last email update time from CosmosDB
+        current_last_update_time = AppUser.get_last_email_update_time()
+        logger.info("Retrieved last email update time from CosmosDB")
         
-        logger.info(f"Found {len(normal_threads)} active threads and {len(draft_ready_threads)} draft_ready threads")
-        
-        # Convert normal threads to MailThread objects
-        for thread_data in normal_threads:
+        # If timestamp is a string, convert to datetime
+        if isinstance(current_last_update_time, str):
             try:
-                thread = MailThread.fromJson(thread_data)
-                threads.append(thread)
-            except Exception as e:
-                logger.error(f"Error loading thread {thread_data.get('id', 'unknown')}: {e}")
-        
-        # Convert draft_ready threads to MailThread objects
-        for thread_data in draft_ready_threads:
-            try:
-                thread = MailThread.fromJson(thread_data)
-                threads.append(thread)
-            except Exception as e:
-                logger.error(f"Error loading thread {thread_data.get('id', 'unknown')}: {e}")
-        
-        # Sort threads by last_updated (newest first)
-        threads.sort(key=lambda t: t.last_updated.replace(tzinfo=datetime.timezone.utc) if t.last_updated 
-                else datetime.datetime.min.replace(tzinfo=datetime.timezone.utc), 
-                reverse=True)
-        
-        logger.info(f"Successfully loaded {len(threads)} threads")
-        
-        # Get the latest timestamp
-        current_last_update_time = db.get_latest_update_time()
-        
-        # If no timestamp from DB, use the most recent thread
-        if current_last_update_time is None and threads:
-            current_last_update_time = threads[0].last_updated
+                current_last_update_time = datetime.datetime.fromisoformat(current_last_update_time)
+                logger.info(f"Converted timestamp from database: {current_last_update_time}")
+            except ValueError:
+                logger.warning(f"Invalid timestamp format in database: {current_last_update_time}")
+                current_last_update_time = None
     
     except Exception as e:
-        logger.error(f"Error loading threads from database: {e}")
+        logger.error(f"Error retrieving last email update time: {e}")
         logger.debug(traceback.format_exc())
-        threads = []
         current_last_update_time = None
     
-    return threads, current_last_update_time 
+    # Return empty threads list and last update time
+    return [], current_last_update_time 
 
 
 def get_threads_require_process(all_threads):
@@ -96,7 +62,7 @@ def get_threads_require_process(all_threads):
     return threads_require_process
 
 
-def process_thread(thread: GmailThread, gmail_handler, secretary_agent, logger=None):
+def process_thread(thread, gmail_handler, secretary_agent, logger=None):
     """
     Process a thread with the secretary agent.
     
@@ -145,8 +111,18 @@ def process_thread(thread: GmailThread, gmail_handler, secretary_agent, logger=N
         # Only add label if it doesn't already exist in the list
         if label_to_add and label_to_add not in thread.label_ids:
             thread.label_ids.append(label_to_add)
-            
-        thread.save_thread(gmail_handler=gmail_handler)
+        
+        # Apply label changes through Gmail API
+        label_modifications = {
+            'addLabelIds': thread.label_ids,
+            "removeLabelIds": []
+        }
+        gmail_handler.service.users().threads().modify(id=thread.id, userId='me', body=label_modifications).execute()
+        
+        # Update last email time in CosmosDB after successful processing
+        AppUser.update_last_email_time(thread.last_updated)
+        logger.info(f"Updated last email time in CosmosDB to {thread.last_updated}")
+        
         return True
     
     except Exception as e:
@@ -154,7 +130,6 @@ def process_thread(thread: GmailThread, gmail_handler, secretary_agent, logger=N
         logger.error(f"Error processing thread {thread.id}: {e}")
         logger.debug(traceback.format_exc())
         thread.processing_error = str(e)
-        thread.save_thread(gmail_handler=gmail_handler)
         return False
 
 
