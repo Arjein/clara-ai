@@ -69,7 +69,7 @@ def parse_arguments():
     # Core settings
     parser.add_argument('--interval', type=int, default=20,
                         help='Check interval in seconds')
-    parser.add_argument('--limit', type=int, default=5,
+    parser.add_argument('--limit', type=int, default=50,
                         help='Maximum number of emails to fetch')
     
     # Logging and display options
