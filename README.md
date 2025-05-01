@@ -9,7 +9,7 @@
 - **Automated Email Triage:**  
   Classifies emails into actionable categories: Ignore, Notify, Needs Your Input, and Ready to Send, using custom Gmail labels for clear organization.
 - **AI-Powered Response Drafting:**  
-  Generates intelligent, context-aware draft replies using LLMs (OpenAI, Anthropic, etc.), and requests missing information when needed.
+  Generates intelligent, context-aware draft replies using LLMs, and requests missing information when needed.
 - **Workflow Automation:**  
   Orchestrates the flow from triage to draft creation and label management, maintaining thread state and updating labels as emails are processed.
 - **Gmail Integration:**  
@@ -25,7 +25,7 @@
 
 - **Python 3.9+**
 - **LangChain & LangGraph** for agent workflow orchestration
-- **OpenAI / Anthropic** LLMs for email understanding and drafting
+- **Azure OpenAI** LLMs for email understanding and drafting
 - **Google Gmail API** for email access and management
 - **Azure CosmosDB** for persistent user state and memory
 - **Rich** for beautiful CLI output
@@ -65,12 +65,12 @@ pip install -r requirements.txt
 Create a `.env` file in the project root with the following variables (example):
 
 ```env
-OPENAI_API_KEY=your-openai-api-key
-ANTHROPIC_API_KEY=your-anthropic-api-key
-AZURE_COSMOSDB_URI=your-cosmosdb-uri
-AZURE_COSMOSDB_KEY=your-cosmosdb-key
-AZURE_COSMOSDB_DATABASE=your-database-name
-AZURE_COSMOSDB_CONTAINER=your-container-name
+AZURE_OPENAI_API_KEY=your-azure-openai-api-key
+AZURE_OPENAI_ENDPOINT=your-azure-openai-endpoint
+AZURE_OPENAI_API_VERSION=your-azure-openai-api-version
+OPENAI_API_VERSION=your-openai-api-version
+MONGODB_CONNECTION_STRING=your-database-connection-string
+MONGODB_DATABASE=your-database-name
 ```
 
 > **Note:** Only add the variables you need for your setup. Never commit your `.env` file or credentials to version control.
@@ -135,7 +135,7 @@ MIT License. See [LICENSE](LICENSE) for details.
 
 ## 🙏 Acknowledgments
 
-- Built with [LangChain](https://github.com/langchain-ai/langchain), [OpenAI](https://openai.com/), [Anthropic](https://www.anthropic.com/), and [Google Gmail API](https://developers.google.com/gmail/api).
+- Built with [LangChain](https://github.com/langchain-ai/langchain), [OpenAI](https://openai.com/), and [Google Gmail API](https://developers.google.com/gmail/api).
 
 ---
 
