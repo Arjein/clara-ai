@@ -107,7 +107,7 @@ class AppUser:
             from cosmos_db import CosmosDB
             cosmos_db = CosmosDB.get_instance()
             # TODO EDIT THIS
-            return '2025-04-28T00:00:00Z' #cosmos_db.get_user_last_email_time(cls.email)
+            return cosmos_db.get_user_last_email_time(cls.email)
         except Exception as e:
             logger = logging.getLogger("ClaraSecretary")
             logger.error(f"Error getting last email update time: {e}")

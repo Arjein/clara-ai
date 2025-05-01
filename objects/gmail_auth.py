@@ -50,6 +50,7 @@ class GmailAuthManager:
         self.token_path = token_path
         self.credentials_path = credentials_path
         self.service = None
+        self.flow = None
         
     def authenticate(self):
         """

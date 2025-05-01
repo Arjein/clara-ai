@@ -134,4 +134,3 @@ def process_thread(thread, gmail_handler, secretary_agent, logger=None):
 
 
 
-
