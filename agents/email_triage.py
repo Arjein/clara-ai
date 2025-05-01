@@ -79,7 +79,7 @@ class EmailTriageSystem:
             ]
         )
         
-        self.logger.info(f"Email classified as: {result.classification}")
+        #self.logger.info(f"Email classified as: {result.classification}")
         self.logger.debug(f"Classification reasoning: {result.reasoning}")
         
         return result

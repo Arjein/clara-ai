@@ -127,10 +127,10 @@ def main():
     with console.status("[bold green]Connecting to Azure CosmosDB...", spinner="dots"):
         try:
             cosmos_db = CosmosDB.get_instance()
-            logger.info("Connected to Azure CosmosDB for user management")
+            #logger.info("Connected to Azure CosmosDB for user management")
         except Exception as e:
-            logger.error(f"Failed to connect to Azure CosmosDB: {e}")
-            console.print("[bold red]Error: Failed to connect to Azure CosmosDB[/bold red]")
+            #logger.error(f"Failed to connect to Azure CosmosDB: {e}")
+            #console.print("[bold red]Error: Failed to connect to Azure CosmosDB[/bold red]")
             exit(1)
     
     # Authenticate with Gmail 
@@ -165,7 +165,7 @@ def main():
         if last_update:
             try:
                 last_update = datetime.fromisoformat(last_update)
-                logger.info(f"Last Email Update: {last_update} | {last_update.timestamp()}")
+                #logger.info(f"Last Email Update: {last_update} | {last_update.timestamp()}")
             except ValueError:
                 logger.warning(f"Invalid last update time format in database: {last_update}")
                 last_update = None
@@ -188,7 +188,7 @@ def main():
                         # Use the timestamp directly in the query
                         query += f" after:{timestamp_seconds}"
                         
-                        logger.info(f"Query: {query} (timestamp from: {last_update.isoformat()})")
+                        #logger.info(f"Query: {query} (timestamp from: {last_update.isoformat()})")
                     
                     with console.status(f"[bold green]Fetching emails with query: {query}...", spinner="dots"):
                         all_threads = gmail_handler.fetch_threads( 
@@ -210,7 +210,6 @@ def main():
                     
                     # Process threads that need attention
                     threads_require_process = get_threads_require_process(all_threads)
-                    
                     if threads_require_process:
                         logger.info(f"Processing {len(threads_require_process)} emails that require attention")
                         console.print(f"\n[bold green]Processing {len(threads_require_process)} emails that require attention...[/bold green]")
@@ -264,15 +263,15 @@ def main():
                                 # Only update if the new time is later than the current stored time
                                 if last_update > current_datetime:
                                     AppUser.update_last_email_time(last_update)
-                                    logger.info(f"Updated last_update time to {last_update} | {last_update.timestamp()}")
+                                 #   logger.info(f"Updated last_update time to {last_update} | {last_update.timestamp()}")
                             except ValueError:
                                 # If we can't parse the current time, just update
                                 AppUser.update_last_email_time(last_update)
-                                logger.info(f"Updated last_update time to {last_update} | {last_update.timestamp()}")
+                                #logger.info(f"Updated last_update time to {last_update} | {last_update.timestamp()}")
                         else:
                             # If no current time stored, update
                             AppUser.update_last_email_time(last_update)
-                            logger.info(f"Updated last_update time to {last_update} | {last_update.timestamp()}")
+                            #logger.info(f"Updated last_update time to {last_update} | {last_update.timestamp()}")
                 
                 next_check_time = datetime.now() + timedelta(seconds=args.interval)
                 logger.info(f"Waiting until next check ({next_check_time.strftime('%H:%M:%S')})")

@@ -55,8 +55,8 @@ def get_threads_require_process(all_threads):
     """
     threads_require_process = []
     for thread in all_threads:
+        
         if thread.pre_reply_class and thread.reply_class == None and thread.draft_ready == False and thread.replied == False:
-            print('Did we reply to this thread: ', thread.replied)
             threads_require_process.append(thread)
     
     return threads_require_process

@@ -15,3 +15,8 @@ credentials/
 token.json
 
 dev/
+
+*.log
+.env.*
+*.pyc
+*.pkl

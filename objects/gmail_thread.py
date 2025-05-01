@@ -121,7 +121,7 @@ class GmailThread(MailThread):
             'latest_from': messages[-1].sender_email,
             'latest_to': messages[-1].recipient_email,
             'reply_class': reply_class,
-            'pre_reply_class': all(label in messages[-1].label_ids for label in ['IMPORTANT', 'CATEGORY_PERSONAL']),
+            'pre_reply_class': any(label in messages[-1].label_ids for label in ['IMPORTANT', 'CATEGORY_PERSONAL']),
             'draft_ready': draft_ready,
             'replied': replied
         }
