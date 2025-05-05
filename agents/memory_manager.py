@@ -6,9 +6,10 @@ It provides a unified interface for storing, retrieving, and managing contextual
 """
 
 from langgraph.store.memory import InMemoryStore
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Literal
 import logging
-
+from langchain_huggingface.embeddings import HuggingFaceEmbeddings
+from langchain_ollama.embeddings import OllamaEmbeddings
 class MemoryManager:
     """
     Manages memory storage and retrieval for the agent system.
@@ -17,18 +18,47 @@ class MemoryManager:
     handling operations like storing, retrieving, and searching memory.
     """
     
-    def __init__(self, embedding_model: str = "azure_openai:text-embedding-ada-002-2"):
-        """
+    def __init__(self, embedding_model: str = "local:all-minilm", 
+                 model_type: Literal["azure", "ollama", "huggingface", "local"] = "local"):
+        """ 
         Initialize the memory manager with a specific embedding model.
         
         Args:
             embedding_model: The model to use for text embeddings in memory indexing
+            model_type: The type of model provider to use
+                - "azure": Use Azure OpenAI (paid)
+                - "ollama": Use local Ollama models (free)
+                - "huggingface": Use Hugging Face models (free)
+                - "local": Use local embedding models (free)
         """
         self.logger = logging.getLogger("ClaraSecretary")
-        self.store = InMemoryStore(
-            index={"embed": embedding_model}
-        )
-        self.logger.debug(f"Initialized MemoryManager with embedding model: {embedding_model}")
+        
+        # Setup embedding model based on type
+        embeddings = None
+        
+        if model_type == "azure":
+            # Original Azure OpenAI option (paid)
+            embedding_spec = embedding_model
+        elif model_type == "ollama":
+            # Ollama embeddings - free, uses local Ollama server
+            embeddings = OllamaEmbeddings(model=embedding_model)
+            embedding_spec = {"embed": embeddings}
+        elif model_type == "huggingface" or model_type == "local":
+            # Hugging Face embeddings - free, runs locally
+            if model_type == "local" and embedding_model == "local:all-minilm":
+                # Default to a good small embedding model
+                model_name = "sentence-transformers/all-MiniLM-L6-v2"
+            else:
+                # Use specified model
+                model_name = embedding_model.replace("local:", "")
+                if ":" not in embedding_model and not embedding_model.startswith("sentence-transformers/"):
+                    model_name = f"sentence-transformers/{model_name}"
+            
+            embeddings = HuggingFaceEmbeddings(model_name=model_name)
+            embedding_spec = {"embed": embeddings}
+        
+        self.store = InMemoryStore(index=embedding_spec)
+        self.logger.debug(f"Initialized MemoryManager with embedding model: {embedding_model} (type: {model_type})")
     
     def get_store(self):
         """

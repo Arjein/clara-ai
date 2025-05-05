@@ -15,9 +15,12 @@
 - **Gmail Integration:**  
   Authenticates via OAuth2 and interacts with Gmail API for reading, labeling, and sending emails. Robust label and thread management.
 - **User Profile & Memory:**  
-  Stores user profile and last email update time in Azure CosmosDB, remembering context and previous actions for smarter automation.
+  Stores user profile and last email update time in local JSON storage, remembering context and previous interactions.
 - **Rich CLI Interface:**  
   Provides status, progress, and logs using rich console output.
+- **Local LLM Support:**  
+  Uses Ollama for accessing powerful local language models like llama3.2 with no API costs.  
+  *Note: Using larger models with more parameters (e.g., `llama3:70b`, `mixtral:8x7b-instruct`) significantly enhances the agent's performance in both email triage accuracy and the quality of generated responses compared to smaller models.*
 
 ---
 
@@ -25,23 +28,28 @@
 
 - **Python 3.9+**
 - **LangChain & LangGraph** for agent workflow orchestration
-- **Azure OpenAI** LLMs for email understanding and drafting
+- **Ollama** for running LLMs locally without relying on cloud APIs
 - **Google Gmail API** for email access and management
-- **Azure CosmosDB** for persistent user state and memory
+- **SQLite** for thread storage (optional)
+- **HuggingFace Embeddings** for local semantic memory capabilities
 - **Rich** for beautiful CLI output
 
 ---
 
 ## ⚡ How It Works
 
-1. **Authentication:**  
+1. **Setup:**  
+   Automatically checks for and configures Ollama and required language models.
+2. **Authentication:**  
    Authenticates with Gmail using OAuth2 and retrieves user profile info.
-2. **Triage:**  
+3. **Triage:**  
    Fetches new email threads and classifies them using an LLM-based triage system. Applies custom Gmail labels based on classification.
-3. **Drafting:**  
+4. **Drafting:**  
    For emails requiring a response, generates a draft reply and saves it in Gmail. Marks threads as needing user input if more information is required.
-4. **Workflow Management:**  
-   Coordinates the process using a modular workflow manager and secretary agent. Updates thread state and user memory in CosmosDB.
+5. **Agent Orchestration:**  
+   The `SecretaryAgent` coordinates the process, using the `EmailTriageSystem` for classification and the `ResponseGenerator` (powered by LangGraph and tools like `get_current_date` and memory access) for drafting replies.
+6. **Workflow Management:**  
+   Coordinates the process using a modular workflow manager and secretary agent. Updates thread state and persists user preferences.
 
 ---
 
@@ -54,26 +62,31 @@ git clone https://github.com/arjein/clara-ai.git
 cd clara-ai
 ```
 
-### 2. Install dependencies
+### 2. Install Ollama
+
+Visit [https://ollama.com/download](https://ollama.com/download) to install Ollama for your operating system.
+
+### 3. Run the startup script
+
+The startup script will set everything up for you:
+
+```bash
+bash start.sh
+```
+
+This script will:
+- Check if Ollama is installed and running (starting it if needed)
+- Download the required llama3.2 model if not already available
+- Create and activate a Python virtual environment
+- Install all required Python packages
+- Start the Clara AI application
+
+Alternatively, you can install dependencies manually and run the app:
 
 ```bash
 pip install -r requirements.txt
+python main.py [--interval SECONDS] [--limit N] [--debug]
 ```
-
-### 3. Set up your `.env` file
-
-Create a `.env` file in the project root with the following variables (example):
-
-```env
-AZURE_OPENAI_API_KEY=your-azure-openai-api-key
-AZURE_OPENAI_ENDPOINT=your-azure-openai-endpoint
-AZURE_OPENAI_API_VERSION=your-azure-openai-api-version
-OPENAI_API_VERSION=your-openai-api-version
-MONGODB_CONNECTION_STRING=your-database-connection-string
-MONGODB_DATABASE=your-database-name
-```
-
-> **Note:** Only add the variables you need for your setup. Never commit your `.env` file or credentials to version control.
 
 ### 4. Set up Gmail API credentials
 
@@ -84,15 +97,32 @@ MONGODB_DATABASE=your-database-name
 
 ## 🖥️ Usage
 
-Run Clara AI from the command line:
+### Using the startup script (recommended)
 
 ```bash
-python main.py [--interval SECONDS] [--limit N] [--debug]
+bash start.sh [--model <model_name>] [--interval SECONDS] [--limit N] [--debug]
 ```
 
+Example: To use the `llama3:70b-instruct` model:
+```bash
+bash start.sh --model llama3:70b-instruct
+```
+
+The script will handle running Ollama and cleanup when you exit the app.
+
+### Running manually
+
+```bash
+python main.py [--model <model_name>] [--interval SECONDS] [--limit N] [--debug]
+```
+
+Available options:
+- `--model` — Specify the Ollama model to use (e.g., `llama3:70b-instruct`, `mixtral:8x7b-instruct`). Defaults to `llama3.2` if not specified.
 - `--interval` — Polling interval for checking new emails (default: 20 seconds)
 - `--limit` — Maximum number of emails to fetch per cycle (default: 50)
 - `--debug` — Enable debug logging
+- `--log-file` — Path to log file (default: "clara_secretary.log")
+- `--quiet` — Minimal console output
 
 ---
 
@@ -100,10 +130,12 @@ python main.py [--interval SECONDS] [--limit N] [--debug]
 
 - **Labels:**  
   Clara AI creates and manages custom Gmail labels (e.g., `CLARA - IGNORED`, `CLARA - FYI`, `CLARA - NEEDS YOUR INPUT`, `CLARA - READY TO SEND`, `CLARA - REPLIED`).
-- **LLM Providers:**  
-  Supports multiple LLM backends via LangChain.
+- **LLM Settings:**  
+  Supports different embedding providers (Ollama, HuggingFace, or Azure OpenAI) via the MemoryManager class.
 - **User Profile:**  
-  User information and preferences are stored in CosmosDB and can be extended.
+  User information (name, email), last processed email timestamp, and Gmail label mappings are stored in `user_data.json`.
+- **Memory System:**  
+  Uses `langmem` for semantic search and long-term context retention. Defaults to the `sentence-transformers/all-MiniLM-L6-v2` embedding model locally but can be configured for other Ollama or HuggingFace models via `MemoryManager`.
 
 ---
 
@@ -111,12 +143,16 @@ python main.py [--interval SECONDS] [--limit N] [--debug]
 
 ```
 clara-ai/
-├── agents/         # Core AI logic: triage, response generation, workflow
+├── agents/         # Core AI logic: triage, response generation, workflow, memory
+│   ├── memory_manager.py    # Manages embedding and memory operations
+│   ├── secretary_agent.py   # Main agent orchestration
+│   ├── email_triage.py      # Email classification
+│   └── response_generator.py# Email response generation
 ├── objects/        # Gmail API integration: authentication, labels, threads, messages
+├── start.sh        # Startup script with Ollama management
 ├── helpers.py      # Utility functions for thread processing
 ├── main.py         # Entry point, CLI, and main workflow loop
-├── requirements.txt# Python dependencies
-└── README.md
+└── requirements.txt# Python dependencies
 ```
 
 ---
@@ -135,7 +171,7 @@ MIT License. See [LICENSE](LICENSE) for details.
 
 ## 🙏 Acknowledgments
 
-- Built with [LangChain](https://github.com/langchain-ai/langchain), [OpenAI](https://openai.com/), and [Google Gmail API](https://developers.google.com/gmail/api).
+- Built with [LangChain](https://github.com/langchain-ai/langchain), [LangGraph](https://github.com/langchain-ai/langgraph), [Ollama](https://ollama.com/), and [Google Gmail API](https://developers.google.com/gmail/api).
 
 ---
 

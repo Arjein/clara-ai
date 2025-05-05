@@ -128,31 +128,11 @@ class GmailAuthManager:
                     AppUser.name = name_data.get('givenName', 'Unknown')
                     AppUser.surname = name_data.get('familyName', 'User')
                     self.logger.info(f"User: {AppUser.name} {AppUser.surname}")
-                else:
-                    self._parse_name_from_email()
+                
             except Exception as name_error:
                 self.logger.error(f"Could not fetch user name: {name_error}")
-                self._parse_name_from_email()
                 
         except Exception as profile_error:
             self.logger.error(f"Could not fetch user profile: {profile_error}")
     
-    def _parse_name_from_email(self):
-        """
-        Parse user's name from email address as fallback.
-        
-        This method is called when the People API fails to provide a name.
-        It attempts to extract a name from the email address by splitting
-        at the @ symbol and then at periods.
-        """
-        if not AppUser.email:
-            return
-            
-        email_name = AppUser.email.split('@')[0]
-        if '.' in email_name:
-            AppUser.name = email_name.split('.')[0].capitalize()
-            AppUser.surname = email_name.split('.')[1].capitalize()
-        else:
-            AppUser.name = email_name.capitalize()
-            AppUser.surname = ""
-        self.logger.debug(f"Parsed name from email: {AppUser.name} {AppUser.surname}")
+    

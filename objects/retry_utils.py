@@ -18,20 +18,7 @@ def exponential_backoff_retry(
     jitter: bool = True,
     retryable_exceptions: tuple = (Exception,)
 ) -> Callable:
-    """
-    Decorator for implementing exponential backoff retry logic for API calls.
     
-    Args:
-        max_retries: Maximum number of retry attempts
-        base_delay: Initial delay in seconds
-        max_delay: Maximum delay in seconds
-        backoff_factor: Multiplier for exponential backoff
-        jitter: Add randomness to delay to prevent synchronized retries
-        retryable_exceptions: Tuple of exceptions that should trigger a retry
-        
-    Returns:
-        Decorated function with retry logic
-    """
     def decorator(func: Callable[..., T]) -> Callable[..., T]:
         @wraps(func)
         def wrapper(*args, **kwargs) -> T:

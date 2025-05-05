@@ -89,7 +89,7 @@ class WorkflowManager:
                 "messages": [
                     {
                         "role": "user",
-                        "content": f"Draft a response to this email on behalf of {self.user_profile['full_name']}:\n\nSubject: {subject}\n\nThread: {email_thread}"
+                        "content": f"Draft a plain-text response to this email AS IF YOU ARE {self.user_profile['full_name']} (not as an assistant). Write in the first person from {self.user_profile['name']}'s perspective and sign with {self.user_profile['name']}'s name. NEVER respond as if you are anyone mentioned in the email other than {self.user_profile['full_name']}.\n\nSubject: {subject}\n\nThread: {email_thread}"
                     }
                 ]
             })
@@ -100,7 +100,7 @@ class WorkflowManager:
                 "messages": [
                     {
                         "role": "user",
-                        "content": f"Write an email response as if you are {self.user_profile['full_name']}. Use [BRACKETS] to indicate any details that {self.user_profile['name']} needs to provide, such as confirming a time, granting permission, or adding missing information.\n\nSubject: {subject}\n\nEmail Thread:\n{email_thread}"
+                        "content": f"Write a plain-text email response AS IF YOU ARE {self.user_profile['full_name']} (not as an assistant). Use [BRACKETS] to indicate any details that {self.user_profile['name']} needs to provide. Write in the first person from {self.user_profile['name']}'s perspective and sign with {self.user_profile['name']}'s name. NEVER respond as if you are anyone mentioned in the email other than {self.user_profile['full_name']}.\n\nSubject: {subject}\n\nEmail Thread:\n{email_thread}"
                     }
                 ]
             })

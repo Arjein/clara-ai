@@ -1,18 +1,3 @@
-"""
-Gmail Thread Model
-
-This module provides the GmailThread class, which represents a Gmail conversation thread.
-It handles the conversion of raw Gmail API thread data into a structured object with
-features specific to Clara AI's functionality, including:
-
-- Thread classification and categorization
-- Label management specific to Gmail
-- Time and date handling
-- Conversation state tracking
-
-The GmailThread extends the base MailThread class to implement Gmail-specific functionality
-while maintaining compatibility with the generic mail handling system.
-"""
 from datetime import datetime
 import logging
 from objects.gmail_message import GmailMessage
@@ -21,14 +6,6 @@ from dateutil import parser
 from user import AppUser
 
 class GmailThread(MailThread):
-    """
-    A specialized thread class that represents a Gmail conversation thread.
-    
-    This class converts raw Gmail API thread data into a structured object that
-    can be used throughout the Clara AI system. It handles Gmail-specific details
-    such as label management, thread state, and message organization while providing
-    a consistent interface through its parent MailThread class.
-    """
 
     def __init__(self, thread: dict):
         """
@@ -43,23 +20,7 @@ class GmailThread(MailThread):
         super().__init__(thread_dict)
 
     def extract_thread(self, thread: dict):
-        """
-        Convert raw Gmail API thread data into a structured dictionary.
         
-        This method:
-        1. Transforms raw Gmail message data into GmailMessage objects
-        2. Collects and normalizes label IDs from all messages
-        3. Parses and validates message dates
-        4. Determines thread state (replied, draft ready)
-        5. Classifies the thread for Clara AI processing
-        
-        Args:
-            thread (dict): Raw thread data from the Gmail API
-            
-        Returns:
-            dict: A structured dictionary containing organized thread data
-                with consistent types and values
-        """
         messages = [GmailMessage(message) for message in thread['messages']]   
         label_ids = []
 
@@ -128,25 +89,12 @@ class GmailThread(MailThread):
         return extracted_thread
     
     def save_thread(self, gmail_handler=None, base_path='threads'):
-        """
-        Update Gmail labels for the thread and the last email timestamp in CosmosDB.
         
-        This method no longer saves thread data to the file system, but instead:
-        1. Updates the Gmail labels on the thread based on its current state
-        2. Updates the last email timestamp in CosmosDB
-        
-        Args:
-            gmail_handler: Handler object for Gmail API operations (usually GmailLabelManager)
-            base_path (str): Legacy parameter, kept for compatibility
-            
-        Returns:
-            None
-        """
         # Skip API call if no handler provided (for testing/migration)
         if gmail_handler is None:
             self.logger.debug(f"Skipping label update for thread {self.id} (no Gmail API handler)")
             # Update the last email time in CosmosDB
-            AppUser.update_last_email_time(self.last_updated)
+            #AppUser.update_last_email_time(self.last_updated)
             return
             
         # Track labels to be removed
@@ -178,7 +126,7 @@ class GmailThread(MailThread):
         gmail_handler.service.users().threads().modify(id=self.id, userId='me', body=label_modifications).execute()
         
         # Update the last email time in CosmosDB
-        AppUser.update_last_email_time(self.last_updated)
+        #AppUser.update_last_email_time(self.last_updated)
         self.logger.debug(f"Updated user's last email time to {self.last_updated}")
 
 

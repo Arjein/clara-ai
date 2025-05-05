@@ -120,7 +120,7 @@ def process_thread(thread, gmail_handler, secretary_agent, logger=None):
         gmail_handler.service.users().threads().modify(id=thread.id, userId='me', body=label_modifications).execute()
         
         # Update last email time in CosmosDB after successful processing
-        AppUser.update_last_email_time(thread.last_updated)
+        #AppUser.update_last_email_time(thread.last_updated)
         logger.info(f"Updated last email time in CosmosDB to {thread.last_updated}")
         
         return True

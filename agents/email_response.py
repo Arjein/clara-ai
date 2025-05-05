@@ -18,16 +18,24 @@ class Router(BaseModel):
 
 
 class EmailResponse(BaseModel):
-    """Structured email response format."""
-    greeting: str = Field(description="The salutation/greeting at the beginning of the email")
-    content: str = Field(description="The main body text of the email (without greetings and signature)")
-    signature: str = Field(description="The closing signature of the email")
+    """Structured email response format for responses written AS the user (not on behalf of anyone else)."""
+    greeting: str = Field(description="The salutation/greeting at the beginning of the email. Remember you are writing AS the user.")
+    content: str = Field(description="The main body text of the email (without greetings and signature). The content must be written from the user's perspective, never as someone else.")
+    signature: str = Field(description="The closing signature of the email, which should include the user's name")
     
-    def format_email(self) -> str:
+    @classmethod
+    def format_email(cls, response) -> str:
         """Format the email components into a complete email"""
-        formatted_email = f"{self.greeting}\n\n"
-        formatted_email += f"{self.content}\n\n"
-        formatted_email += f"{self.signature}\n"
+        if isinstance(response, dict):
+            formatted_email = f"{response['greeting']}\n\n"
+            formatted_email += f"{response['content']}\n\n"
+            formatted_email += f"{response['signature']}\n"
+        elif isinstance(response, cls):
+            formatted_email = f"{response.greeting}\n\n"
+            formatted_email += f"{response.content}\n\n"
+            formatted_email += f"{response.signature}\n"
+        else:
+            # Fallback if response is just text
+            return str(response)
         
         return formatted_email
-    

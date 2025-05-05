@@ -34,17 +34,20 @@ class SecretaryAgent:
     It maintains the same functionality as before but with improved modularity.
     """
     
-    def __init__(self, user_profile = None):
+    def __init__(self, user_profile = None, model_name='mixtral:8x7b-instruct'):
         """
         Initialize the secretary agent with its component systems.
         
         Args:
             user_profile: Optional user profile to override defaults
+            model_name: Name of the Ollama model to use (default: mixtral:8x7b-instruct)
+                        Other good options: llama3:70b, claude-3-haiku, mistral:7b-instruct
         """
         self.logger = logging.getLogger("ClaraSecretary")
         
-        # Initialize the language model
-        self.llm = init_chat_model('azure_openai:o3-mini')
+        # Initialize the language model with the specified model
+        self.logger.info(f"Initializing language model with: {model_name}")
+        self.llm = init_chat_model(model=model_name, model_provider='ollama')
         
         # Configure user profile
         self.profile = self._init_user_profile(user_profile)
@@ -138,6 +141,3 @@ class SecretaryAgent:
             email_input,
             config=self.config
         )
-
-
-

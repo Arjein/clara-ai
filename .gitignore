@@ -20,3 +20,6 @@ dev/
 .env.*
 *.pyc
 *.pkl
+
+clara_secretary.log
+user_data.json

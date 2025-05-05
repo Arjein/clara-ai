@@ -69,21 +69,6 @@ class GmailHandler:
         auth_manager = GmailAuthManager()
         return auth_manager.authenticate()
     
-    def fetch_single_thread(self, thread_id):
-        """
-        Fetch a single thread by ID.
-        
-        Retrieves a specific Gmail thread and processes it into a GmailThread object.
-        This method delegates to the thread manager component for the actual implementation.
-        
-        Args:
-            thread_id (str): The ID of the thread to fetch
-            
-        Returns:
-            GmailThread: The fetched thread object or None on error
-        """
-        return self.thread_manager.fetch_single_thread(thread_id)
-    
     def fetch_threads(self, user_id='me', query='', limit=10):
         """
         Get threads from the user's mailbox that match the query.
@@ -119,19 +104,3 @@ class GmailHandler:
         """
         return self.message_composer.create_draft(thread, response_clean)
     
-    # Will not be used, maybe in the future.
-    def send_message(self, draft_id):
-        """
-        Send a draft message.
-        
-        This method sends an existing draft email, converting it into a sent message.
-        It delegates to the message composer component for the actual implementation.
-        
-        Args:
-            draft_id (str): The ID of the draft to send
-            
-        Returns:
-            dict: The sent message object or None on error
-        """
-        return self.message_composer.send_message(draft_id)
-

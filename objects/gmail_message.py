@@ -47,9 +47,6 @@ class GmailMessage(Message):
             body = ""
             clean_body = ""
             
-        
-
-
 
         size = message.get('sizeEstimate', None)
         

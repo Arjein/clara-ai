@@ -15,27 +15,6 @@ import logging
 logger = logging.getLogger("ClaraSecretary")
 
 def parse_timestamp_from_query(query):
-    """
-    Extracts and parses a timestamp from a Gmail query string.
-    
-    This function parses Gmail query strings that include 'after:' timestamp
-    parameters, converting between various timestamp formats and human-readable
-    date strings. It's used for both logging/debugging and extracting time
-    parameters for further processing.
-    
-    Args:
-        query (str): The query string, possibly containing 'after:timestamp'
-        
-    Returns:
-        tuple: (extracted_timestamp, formatted_date_string)
-            - extracted_timestamp: The numeric timestamp or date string extracted
-            - formatted_date_string: A human-readable date representation
-            
-    Example:
-        >>> timestamp, date_str = parse_timestamp_from_query('category:primary after:1614556800')
-        >>> print(f"Timestamp: {timestamp}, Date: {date_str}")
-        Timestamp: 1614556800, Date: 2021-03-01 00:00:00 UTC
-    """
     try:
         # Extract timestamp from after: parameter
         if 'after:' not in query:
