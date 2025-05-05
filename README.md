@@ -30,7 +30,6 @@
 - **LangChain & LangGraph** for agent workflow orchestration
 - **Ollama** for running LLMs locally without relying on cloud APIs
 - **Google Gmail API** for email access and management
-- **SQLite** for thread storage (optional)
 - **HuggingFace Embeddings** for local semantic memory capabilities
 - **Rich** for beautiful CLI output
 
@@ -90,7 +89,7 @@ python main.py [--interval SECONDS] [--limit N] [--debug]
 
 ### 4. Set up Gmail API credentials
 
-- Place your Gmail API credentials in `credentials/credentials.json`.
+- Place your Gmail API credentials in `credentials` folder in JSON format.
 - On first run, the app will guide you through OAuth2 authentication.
 
 ---
@@ -137,23 +136,19 @@ Available options:
 - **Memory System:**  
   Uses `langmem` for semantic search and long-term context retention. Defaults to the `sentence-transformers/all-MiniLM-L6-v2` embedding model locally but can be configured for other Ollama or HuggingFace models via `MemoryManager`.
 
----
+## 🚀 Future Enhancements / TODO
 
-## 📁 Project Structure
+Here are some potential directions for future development:
 
-```
-clara-ai/
-├── agents/         # Core AI logic: triage, response generation, workflow, memory
-│   ├── memory_manager.py    # Manages embedding and memory operations
-│   ├── secretary_agent.py   # Main agent orchestration
-│   ├── email_triage.py      # Email classification
-│   └── response_generator.py# Email response generation
-├── objects/        # Gmail API integration: authentication, labels, threads, messages
-├── start.sh        # Startup script with Ollama management
-├── helpers.py      # Utility functions for thread processing
-├── main.py         # Entry point, CLI, and main workflow loop
-└── requirements.txt# Python dependencies
-```
+- **Desktop Application:** Develop a graphical user interface (GUI) for Clara AI, moving beyond the current command-line interface (CLI) for easier interaction.
+- **Enhanced Memory & Contact Management:** Implement a more sophisticated memory system. This could involve storing information about frequent email senders as entities in a database, allowing Clara to build context about relationships and past interactions.
+- **API Integrations:** Integrate with other APIs to enrich the agent's capabilities. Examples include:
+    - **Calendar Integration:** Allow Clara to access calendar data to check availability, schedule meetings, or understand context related to events.
+    - **CRM Integration:** Connect with Customer Relationship Management systems.
+    - **Project Management Tools:** Link with tools like Jira or Asana.
+- **Multi-Account Support:** Enable Clara AI to manage multiple email accounts simultaneously.
+- **Advanced Workflow Customization:** Provide users with more granular control over defining custom workflows and rules.
+- **Support for Other Email Providers:** Extend compatibility beyond Gmail to include Outlook, Yahoo, etc.
 
 ---
 

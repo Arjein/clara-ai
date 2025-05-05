@@ -4,12 +4,6 @@
 
 __pycache__/
 
-# Ignore threads directory
-threads/
-
-# Ignore config directory
-config/
-
 credentials/
 
 token.json
@@ -21,5 +15,6 @@ dev/
 *.pyc
 *.pkl
 
+*.json
 clara_secretary.log
 user_data.json
